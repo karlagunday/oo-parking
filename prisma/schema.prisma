@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Space {
+  id Int @id @default (autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name String
+
+  size SpaceSize @default(SMALL)
+}
+
+enum SpaceSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+model Entrance {
+  id Int @id @default (autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name String
+}
+
+model EntranceSpace {
+  id Int @id @default (autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entranceId Int
+  spaceId Int
+  distance Int
+}
+
+model Vehicle {
+  id Int @id @default (autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plateNumber String
+
+  size VehicleSize @default(SMALL)
+}
+
+enum VehicleSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+model ActivityLog {
+  id Int @id @default (autoincrement())
+  createdAt DateTime @default(now())
+
+  type ActivityType
+  entranceId Int
+  spaceId Int
+  VehicleId Int
+}
+
+enum ActivityType {
+  IN
+  OUT
+}
