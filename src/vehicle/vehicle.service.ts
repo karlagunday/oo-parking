@@ -4,10 +4,10 @@ import { BaseService } from 'src/base/base.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class ActivityLogService extends BaseService<
-  Prisma.ActivityLogDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
+export class VehicleService extends BaseService<
+  Prisma.VehicleDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
 > {
   constructor(private readonly prismaService: PrismaService) {
-    super(prismaService.activityLog);
+    super(prismaService.vehicle);
   }
 }

@@ -10,19 +10,19 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { BaseController } from 'src/base/base.controller';
-import { CreateEntranceDto, UpdateEntranceDto } from './dto/entrance.dto';
-import { EntranceService } from './entrance.service';
+import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicle.dto';
+import { VehicleService } from './vehicle.service';
 
-@Controller('entrances')
-export class EntranceController extends BaseController<
-  Prisma.EntranceDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
+@Controller('vehicles')
+export class VehicleController extends BaseController<
+  Prisma.VehicleDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
 > {
-  constructor(private readonly entranceService: EntranceService) {
-    super(entranceService);
+  constructor(private readonly vehicleService: VehicleService) {
+    super(vehicleService);
   }
 
   @Post()
-  create(@Body() dto: CreateEntranceDto) {
+  create(@Body() dto: CreateVehicleDto) {
     return super.create(dto);
   }
 
@@ -37,10 +37,7 @@ export class EntranceController extends BaseController<
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateEntranceDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVehicleDto) {
     return super.update(id, dto);
   }
 

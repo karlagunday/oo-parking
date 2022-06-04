@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { EntranceSpaceController } from './entrance-space.controller';
+import { EntranceSpaceService } from './entrance-space.service';
 
 @Module({
-  controllers: [EntranceSpaceController]
+  providers: [EntranceSpaceService],
 })
 export class EntranceSpaceModule {}
