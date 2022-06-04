@@ -1,13 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { BaseService } from 'src/base/base.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Repository } from 'typeorm';
+import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { Vehicle } from './entities/vehicle.entity';
 
 @Injectable()
 export class VehicleService extends BaseService<
-  Prisma.VehicleDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
+  Vehicle,
+  CreateVehicleDto,
+  UpdateVehicleDto
 > {
-  constructor(private readonly prismaService: PrismaService) {
-    super(prismaService.vehicle);
+  constructor(
+    @Inject(Vehicle.name)
+    private vehicleRepository: Repository<Vehicle>,
+  ) {
+    super(vehicleRepository);
   }
 }
