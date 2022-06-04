@@ -16,8 +16,12 @@ model Space {
   updatedAt DateTime @updatedAt
 
   name String
-
   size SpaceSize @default(SMALL)
+
+  entranceSpaces EntranceSpace[]
+  activityLogs ActivityLog[]
+
+  @@map("spaces")
 }
 
 enum SpaceSize {
@@ -32,6 +36,11 @@ model Entrance {
   updatedAt DateTime @updatedAt
 
   name String
+
+  entranceSpaces EntranceSpace[]
+  activityLogs ActivityLog[]
+
+  @@map("entrances")
 }
 
 model EntranceSpace {
@@ -40,8 +49,12 @@ model EntranceSpace {
   updatedAt DateTime @updatedAt
 
   entranceId Int
+  entrance Entrance @relation(fields: [entranceId], references: [id])
   spaceId Int
+  space Space @relation(fields: [spaceId], references: [id])
   distance Int
+
+  @@map("entrance_spaces")
 }
 
 model Vehicle {
@@ -49,9 +62,12 @@ model Vehicle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plateNumber String
-
+  plateNumber String @unique()
   size VehicleSize @default(SMALL)
+
+  activityLogs ActivityLog[]
+
+  @@map("vehicles")
 }
 
 enum VehicleSize {
@@ -66,8 +82,13 @@ model ActivityLog {
 
   type ActivityType
   entranceId Int
+  entrance Entrance @relation(fields: [entranceId], references: [id])
   spaceId Int
-  VehicleId Int
+  space Space @relation(fields: [spaceId], references: [id])
+  vehicleId Int
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@map("activity_logs")
 }
 
 enum ActivityType {
