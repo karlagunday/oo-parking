@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { BaseService } from 'src/base/base.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Repository } from 'typeorm';
+import { Entrance } from './entities/entrance.entity';
 
 @Injectable()
-export class EntranceService extends BaseService<
-  Prisma.EntranceDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
-> {
-  constructor(private readonly prismaService: PrismaService) {
-    super(prismaService.entrance);
+export class EntranceService extends BaseService<Entrance> {
+  constructor(
+    @Inject(Entrance.name)
+    private entranceRepository: Repository<Entrance>,
+  ) {
+    super(entranceRepository);
   }
 }

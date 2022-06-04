@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { BaseService } from 'src/base/base.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Repository } from 'typeorm';
+import { Space } from './entities/space.entity';
 
 @Injectable()
-export class SpaceService extends BaseService<
-  Prisma.SpaceDelegate<Prisma.PrismaClientOptions['rejectOnNotFound']>
-> {
-  constructor(private readonly prismaService: PrismaService) {
-    super(prismaService.space);
+export class SpaceService extends BaseService<Space> {
+  constructor(
+    @Inject(Space.name)
+    private spaceRepository: Repository<Space>,
+  ) {
+    super(spaceRepository);
   }
 }

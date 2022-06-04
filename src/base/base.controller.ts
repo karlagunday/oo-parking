@@ -1,54 +1,48 @@
-import { NotFoundException } from '@nestjs/common';
-import { BaseService, Delegate } from './base.service';
+import {
+  Body,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseFilters,
+} from '@nestjs/common';
+import { TypeOrmErrorExceptionFilter } from 'src/filters/typeorm-error.filter';
+import { BaseEntity } from './base.entity';
+import { BaseService } from './base.service';
 
-/**
- * Tried abstracting away everything but this is the minimum version where it works
- * Would've loved to just pass a generic service, DTO and let the base service
- * handle all the dependency injection, pipe validation
- *
- * If the execution has no validation errors, it works. But if there are validation errors,
- * It just returns a generic error and seems to not execute the validation pipe
- *
- * Settling with this version for now
- */
+@UseFilters(new TypeOrmErrorExceptionFilter())
+export abstract class BaseController<
+  Entity extends BaseEntity,
+  CreateDto,
+  UpdateDto,
+  Service extends BaseService<Entity>,
+> {
+  constructor(private readonly service: Service) {}
 
-export class BaseController<T extends Delegate> {
-  constructor(private readonly baseService: BaseService<T>) {}
-
-  create(dto: unknown) {
-    return this.baseService.create(dto);
+  @Post()
+  create(@Body() createDto: CreateDto) {
+    return this.service.create(createDto as unknown as Entity);
   }
 
-  retrieveAll() {
-    return this.baseService.getMany();
+  @Get()
+  findAll() {
+    return this.service.findAll();
   }
 
-  async retrieveById(id: number) {
-    const result = await this.baseService.getById(id);
-    if (!result) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    return result;
+  @Get(':id')
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.service.findOne(id);
   }
 
-  async update(id: number, dto: unknown) {
-    const target = await this.baseService.getById(id);
-
-    if (!target) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    return await this.baseService.update(id, dto);
+  @Patch(':id')
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateDto: UpdateDto) {
+    return this.service.update(id, updateDto);
   }
 
-  async delete(id: number) {
-    const target = await this.baseService.getById(id);
-
-    if (!target) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    return this.baseService.delete(id);
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.remove(id);
   }
 }

@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { SpaceController } from './space.controller';
 import { SpaceService } from './space.service';
+import { SpaceController } from './space.controller';
+import { DatabaseModule } from 'src/database/database.module';
+import { spaceProviders } from './providers/space.providers';
 
 @Module({
   controllers: [SpaceController],
-  providers: [SpaceService],
+  imports: [DatabaseModule],
+  providers: [...spaceProviders, SpaceService],
 })
 export class SpaceModule {}

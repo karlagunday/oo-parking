@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { EntranceController } from './entrance.controller';
 import { EntranceService } from './entrance.service';
+import { EntranceController } from './entrance.controller';
+import { DatabaseModule } from 'src/database/database.module';
+import { entranceProviders } from './providers/entrance.providers';
 
 @Module({
   controllers: [EntranceController],
-  providers: [EntranceService],
+  imports: [DatabaseModule],
+  providers: [...entranceProviders, EntranceService],
 })
 export class EntranceModule {}
