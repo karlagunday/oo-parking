@@ -17,13 +17,13 @@ export abstract class BaseController<
   Entity extends BaseEntity,
   CreateDto,
   UpdateDto,
-  Service extends BaseService<Entity, CreateDto, UpdateDto>,
+  Service extends BaseService<Entity>,
 > {
   constructor(private readonly service: Service) {}
 
   @Post()
   create(@Body() createDto: CreateDto) {
-    return this.service.create(createDto);
+    return this.service.create(createDto as unknown as Entity);
   }
 
   @Get()

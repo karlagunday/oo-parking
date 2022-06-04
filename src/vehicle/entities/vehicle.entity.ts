@@ -1,8 +1,15 @@
+import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { VehicleSize } from '../vehicle.types';
 
-@Entity()
+@Entity('vehicles')
 export class Vehicle extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -12,4 +19,8 @@ export class Vehicle extends BaseEntity {
 
   @Column({ type: 'enum', enum: VehicleSize, default: VehicleSize.Small })
   size!: VehicleSize;
+
+  @OneToMany(() => ActivityLog, (activityLog) => activityLog.vehicle)
+  @JoinColumn()
+  activityLogs: ActivityLog[];
 }

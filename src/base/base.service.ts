@@ -2,15 +2,11 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { BaseEntity } from './base.entity';
 
-export abstract class BaseService<
-  Entity extends BaseEntity,
-  CreateDto extends Partial<Entity>,
-  UpdateDto extends Partial<Entity>,
-> {
+export abstract class BaseService<Entity extends BaseEntity> {
   constructor(private repository: Repository<Entity>) {}
 
-  create(createDto: CreateDto) {
-    return this.repository.save(createDto as unknown as Entity);
+  create(createDto: Entity) {
+    return this.repository.save(createDto);
   }
 
   findAll() {
@@ -23,13 +19,10 @@ export abstract class BaseService<
     } as unknown as FindOptionsWhere<Entity>);
   }
 
-  async update(id: string, updateDto: UpdateDto) {
+  async update(id: string, updateDto: QueryDeepPartialEntity<Entity>) {
     await this.findOne(id);
 
-    return await this.repository.update(
-      id,
-      updateDto as unknown as QueryDeepPartialEntity<Entity>,
-    );
+    return await this.repository.update(id, updateDto);
   }
 
   async remove(id: string) {
