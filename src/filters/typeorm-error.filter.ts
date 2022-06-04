@@ -21,6 +21,7 @@ export class TypeOrmErrorExceptionFilter implements ExceptionFilter {
     const name = exception.name;
     const code = errorMap[name]?.code ?? 500;
     const message = errorMap[name]?.message ?? 'Something went wrong.';
+    console.log('An error has occurred. Details: ', exception);
 
     response.status(code).json({
       code,

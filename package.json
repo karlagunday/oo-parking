@@ -24,7 +24,7 @@
     "db:dev:up": "docker compose up dev-db -d",
     "db:migrations:generate": "yarn typeorm migration:generate",
     "db:migrations:run": "yarn typeorm migration:run",
-    "db:dev:reset": "yarn db:dev:rm && yarn db:dev:up && yarn db:migrations:run"
+    "db:dev:reset": "yarn db:dev:rm && yarn db:dev:up && yarn build && yarn db:migrations:run"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
