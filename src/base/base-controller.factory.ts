@@ -40,6 +40,7 @@ export function BaseControllerFactory<
   );
 
   @UseFilters(new TypeOrmErrorExceptionFilter())
+  @UseInterceptors(ClassSerializerInterceptor)
   class CrudController<Entity extends BaseEntity, CreateDto, UpdateDto>
     implements BaseInterface<Entity, CreateDto, UpdateDto>
   {
@@ -51,7 +52,6 @@ export function BaseControllerFactory<
       return this.service.create(createDto as unknown as Entity);
     }
 
-    @UseInterceptors(ClassSerializerInterceptor)
     @Get()
     findAll() {
       return this.service.findAll();
