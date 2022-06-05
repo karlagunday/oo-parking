@@ -7,9 +7,11 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 
 @Entity('entrance_spaces')
+@Unique(['spaceId', 'entranceId'])
 export class EntranceSpace extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

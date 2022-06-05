@@ -1,17 +1,16 @@
 import { Controller } from '@nestjs/common';
-import { BaseController } from 'src/base/base.controller';
+import { BaseControllerFactory } from 'src/base/base-controller.factory';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { Vehicle } from './entities/vehicle.entity';
 import { VehicleService } from './vehicle.service';
 
 @Controller('vehicles')
-export class VehicleController extends BaseController<
+export class VehicleController extends BaseControllerFactory<
   Vehicle,
   CreateVehicleDto,
-  UpdateVehicleDto,
-  VehicleService
-> {
+  UpdateVehicleDto
+>(CreateVehicleDto, UpdateVehicleDto) {
   constructor(private readonly vehicleService: VehicleService) {
     super(vehicleService);
   }
