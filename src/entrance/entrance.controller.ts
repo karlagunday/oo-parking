@@ -1,5 +1,6 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { BaseControllerFactory } from 'src/base/base-controller.factory';
+import { AssignSpaceDto } from './dto/add-space.dto';
 import { CreateEntranceDto } from './dto/create-entrance.dto';
 import { UpdateEntranceDto } from './dto/update-entrance.dto';
 import { Entrance } from './entities/entrance.entity';
@@ -13,5 +14,13 @@ export class EntranceController extends BaseControllerFactory<
 >(CreateEntranceDto, UpdateEntranceDto) {
   constructor(private readonly entranceService: EntranceService) {
     super(entranceService);
+  }
+
+  @Post(':id/spaces/assign')
+  assignSpace(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignSpaceDto,
+  ) {
+    return this.entranceService.assignSpaceById(id, dto);
   }
 }

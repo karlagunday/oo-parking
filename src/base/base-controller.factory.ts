@@ -56,7 +56,7 @@ export function BaseControllerFactory<
 
     @Get(':id')
     async findOne(@Param('id', ParseUUIDPipe) id: string) {
-      return await this.service.findOne(id);
+      return await this.service.findOneByIdOrFail(id);
     }
 
     @Patch(':id')

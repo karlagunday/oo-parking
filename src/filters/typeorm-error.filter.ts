@@ -8,10 +8,14 @@ import { EntityNotFoundError, TypeORMError } from 'typeorm';
 @Catch(TypeORMError)
 export class TypeOrmErrorExceptionFilter implements ExceptionFilter {
   catch(exception: EntityNotFoundError, host: ArgumentsHost) {
-    const errorMap: Record<string, { code: number; message: string }> = {
+    const errorMap: Record<
+      string,
+      { code: number; message: string; error: string }
+    > = {
       EntityNotFoundError: {
         code: 404,
         message: 'Resource not found',
+        error: 'Not Found',
       },
     };
 
@@ -19,13 +23,15 @@ export class TypeOrmErrorExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     const name = exception.name;
-    const code = errorMap[name]?.code ?? 500;
+    const statusCode = errorMap[name]?.code ?? 500;
     const message = errorMap[name]?.message ?? 'Something went wrong.';
+    const error = errorMap[name]?.message ?? 'Internal server error';
     console.log('An error has occurred. Details: ', exception);
 
-    response.status(code).json({
-      code,
+    response.status(statusCode).json({
+      statusCode,
       message,
+      error,
     });
   }
 }
