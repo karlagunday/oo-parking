@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Type,
+  UseFilters,
   UsePipes,
 } from '@nestjs/common';
+import { TypeOrmErrorExceptionFilter } from 'src/filters/typeorm-error.filter';
 import { BaseValidationPipe } from './base-validation.pipe';
 import { BaseEntity } from './base.entity';
 import { BaseInterface } from './base.interface';
@@ -35,6 +37,7 @@ export function BaseControllerFactory<
     { body: updateDto },
   );
 
+  @UseFilters(new TypeOrmErrorExceptionFilter())
   class CrudController<Entity extends BaseEntity, CreateDto, UpdateDto>
     implements BaseInterface<Entity, CreateDto, UpdateDto>
   {
