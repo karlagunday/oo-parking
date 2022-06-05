@@ -8,6 +8,8 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Space } from 'src/space/entities/space.entity';
+import { Exclude, Expose, Transform } from 'class-transformer';
 
 @Entity('entrances')
 export class Entrance extends BaseEntity {
@@ -17,11 +19,22 @@ export class Entrance extends BaseEntity {
   @Column()
   name!: string;
 
-  @OneToMany(() => EntranceSpace, (entranceSpace) => entranceSpace.entrance)
+  @Exclude()
+  @OneToMany(() => EntranceSpace, (entranceSpace) => entranceSpace.entrance, {
+    eager: true,
+  })
   @JoinColumn()
   entranceSpaces!: EntranceSpace[];
 
   @OneToMany(() => ActivityLog, (activityLog) => activityLog.entrance)
   @JoinColumn()
   activityLogs!: ActivityLog[];
+
+  @Expose()
+  get spaces() {
+    return this.entranceSpaces.map(({ space, distance }) => ({
+      ...space,
+      distance,
+    }));
+  }
 }

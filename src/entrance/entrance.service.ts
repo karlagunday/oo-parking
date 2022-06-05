@@ -8,9 +8,9 @@ import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { SpaceService } from 'src/space/space.service';
 import { Repository } from 'typeorm';
+import { EntranceSpace } from '../entrance-space/entities/entrance-space.entity';
 import { AssignSpaceDto } from './dto/add-space.dto';
 import { Entrance } from './entities/entrance.entity';
-import { EntranceSpace } from '../entrance-space/entities/entrance-space.entity';
 
 @Injectable()
 export class EntranceService extends BaseService<Entrance> {
@@ -21,15 +21,6 @@ export class EntranceService extends BaseService<Entrance> {
     private entranceSpaceService: EntranceSpaceService,
   ) {
     super(entranceRepository);
-  }
-
-  async getSpaces(id: string) {
-    const entranceSpaces = await this.entranceSpaceService.findAll({
-      where: { entranceId: id },
-      relations: ['space'],
-    });
-
-    return entranceSpaces.map((entranceSpace) => entranceSpace.space);
   }
 
   async assignSpaceById(
@@ -46,9 +37,7 @@ export class EntranceService extends BaseService<Entrance> {
       throw new NotFoundException('Space not found');
     }
 
-    const existingSpaceIds = (await this.getSpaces(entranceId)).map(
-      ({ id }) => id,
-    );
+    const existingSpaceIds = entrance.spaces.map(({ id }) => id);
     if (existingSpaceIds.includes(spaceId)) {
       throw new BadRequestException('Space already assigned to the entrance');
     }

@@ -19,7 +19,7 @@ export class EntranceSpace extends BaseEntity {
   @Column({ type: 'uuid' })
   spaceId!: string;
 
-  @ManyToOne(() => Space, (space) => space.entranceSpaces)
+  @ManyToOne(() => Space, (space) => space.entranceSpaces, { eager: true })
   @JoinColumn()
   space!: Space;
 

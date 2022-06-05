@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Delete,
   Get,
   Param,
@@ -8,6 +9,7 @@ import {
   Post,
   Type,
   UseFilters,
+  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { TypeOrmErrorExceptionFilter } from 'src/filters/typeorm-error.filter';
@@ -49,6 +51,7 @@ export function BaseControllerFactory<
       return this.service.create(createDto as unknown as Entity);
     }
 
+    @UseInterceptors(ClassSerializerInterceptor)
     @Get()
     findAll() {
       return this.service.findAll();

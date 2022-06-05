@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
 import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
