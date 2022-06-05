@@ -1,6 +1,8 @@
-import { BaseEntity } from 'src/base/base.entity';
+import { Exclude, Expose } from 'class-transformer';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
+import { BaseEntity } from 'src/base/base.entity';
 import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
+import { SpaceWithDistance } from 'src/space/space.types';
 import {
   Column,
   Entity,
@@ -8,8 +10,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Space } from 'src/space/entities/space.entity';
-import { Exclude, Expose, Transform } from 'class-transformer';
 
 @Entity('entrances')
 export class Entrance extends BaseEntity {
@@ -31,10 +31,16 @@ export class Entrance extends BaseEntity {
   activityLogs!: ActivityLog[];
 
   @Expose()
-  get spaces() {
-    return this.entranceSpaces.map(({ space, distance }) => ({
-      ...space,
-      distance,
-    }));
+  get spaces(): SpaceWithDistance[] {
+    /**
+     * @todo fix types
+     */
+    return this.entranceSpaces.map(
+      ({ space, distance }) =>
+        ({
+          ...space,
+          distance,
+        } as unknown as SpaceWithDistance),
+    );
   }
 }

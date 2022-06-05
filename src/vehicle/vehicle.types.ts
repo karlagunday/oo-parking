@@ -1,5 +1,5 @@
 export enum VehicleSize {
-  Small = 'SM',
-  Medium = 'MD',
-  Large = 'LG',
+  Small = 1,
+  Medium = 10,
+  Large = 20,
 }

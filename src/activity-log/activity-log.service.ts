@@ -11,4 +11,11 @@ export class ActivityLogService extends BaseService<ActivityLog> {
   ) {
     super(activityLogRepository);
   }
+
+  getLastActivityByVehicleId(vehicleId: string) {
+    return this.findOne({
+      where: { vehicleId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

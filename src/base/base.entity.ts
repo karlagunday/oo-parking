@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   BaseEntity as OrmBaseEntity,
   CreateDateColumn,
@@ -12,9 +13,11 @@ export abstract class BaseEntity extends OrmBaseEntity {
     return Object.assign(new this(), params);
   }
 
+  @Exclude()
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
+  @Exclude()
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 }

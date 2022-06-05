@@ -18,7 +18,14 @@ export abstract class BaseService<Entity extends BaseEntity> {
     return this.repository.find(options);
   }
 
-  findOneById(id: string, options: Omit<FindOneOptions<Entity>, 'where'> = {}) {
+  findOne(options: FindOneOptions<Entity>): Promise<Entity | null> {
+    return this.repository.findOne(options);
+  }
+
+  findOneById(
+    id: string,
+    options: Omit<FindOneOptions<Entity>, 'where'> = {},
+  ): Promise<Entity | null> {
     return this.repository.findOne({
       where: { id },
       ...options,
@@ -41,5 +48,9 @@ export abstract class BaseService<Entity extends BaseEntity> {
     await this.findOneByIdOrFail(id);
 
     return await this.repository.delete(id);
+  }
+
+  count(options: FindManyOptions<Entity> = {}) {
+    return this.repository.count(options);
   }
 }
