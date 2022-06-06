@@ -37,4 +37,7 @@ export class Ticket extends BaseEntity {
 
   @Column({ type: 'float', default: 0 })
   cost?: number;
+
+  @Column({ type: 'float', default: 0 })
+  hours?: number;
 }

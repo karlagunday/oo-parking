@@ -119,4 +119,8 @@ export class EntranceService extends BaseService<Entrance> {
 
     return availableSpaces.sort((a, b) => b.distance - a.distance).pop();
   }
+
+  async exit(vehicle: Vehicle) {
+    return await this.ticketService.checkOutVehicle(vehicle);
+  }
 }

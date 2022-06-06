@@ -56,6 +56,10 @@ export class VehicleService extends BaseService<Vehicle> {
     return !!(await this.ticketService.getActiveTicketByVehicleId(id));
   }
 
+  async isUnparked(id: string) {
+    return !(await this.isParked(id));
+  }
+
   async unpark(vehicleId: string) {
     const vehicle = await this.findOneById(vehicleId);
     if (!vehicle) {
@@ -66,10 +70,6 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is not parked');
     }
 
-    // await this.spaceService.vacateByVehicle(vehicle);
-  }
-
-  async isUnparked(id: string) {
-    return !(await this.isParked(id));
+    return await this.entranceService.exit(vehicle);
   }
 }
