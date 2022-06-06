@@ -4,13 +4,15 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { differenceInMinutes } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ActivityLogType } from 'src/activity-log/activity-log.types';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { SpaceService } from 'src/space/space.service';
+import { CONTINUOUS_RATE_MINS } from 'src/utils/constants';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
 import { TicketStatus } from './ticket.types';
 
@@ -41,11 +43,44 @@ export class TicketService extends BaseService<Ticket> {
     });
   }
 
-  getTicketForVehicle(vehicle: Vehicle) {
-    /**
-     * @todo determine if a ticket can be reused
-     * for a 'continuous' parking
-     */
+  async getTicketForVehicle(vehicle: Vehicle) {
+    const lastTicket = await this.findOne({
+      where: {
+        vehicleId: vehicle.id,
+        status: TicketStatus.Completed,
+        completedAt: Not(IsNull()),
+      },
+      order: { completedAt: 'DESC' },
+    });
+
+    if (!!lastTicket) {
+      const now = new Date();
+      const minutesFromLastCheckout = differenceInMinutes(
+        now,
+        new Date(lastTicket.completedAt),
+      );
+
+      console.log({
+        now,
+        completedAt: lastTicket.completedAt,
+        ticketNumber: lastTicket.number,
+        minutesFromLastCheckout,
+      });
+
+      // reuse last ticket if checking in within the countinuous rate mins after last checkout
+      if (minutesFromLastCheckout <= CONTINUOUS_RATE_MINS) {
+        await this.update(lastTicket.id, {
+          status: TicketStatus.Active,
+          completedAt: null,
+          // also clear the hours, costs
+          cost: 0,
+          hours: 0,
+        });
+        return await this.findOneById(lastTicket.id);
+      }
+    }
+
+    // else, issue a new ticket
     return this.create(
       Ticket.construct({
         vehicleId: vehicle.id,
@@ -64,7 +99,7 @@ export class TicketService extends BaseService<Ticket> {
       throw new BadRequestException('Vehicle not parked');
     }
 
-    await this.activityLogService.create(
+    const outActivity = await this.activityLogService.create(
       ActivityLog.construct({
         entranceId: lastActivty.entranceId,
         spaceId: lastActivty.spaceId,
@@ -95,6 +130,7 @@ export class TicketService extends BaseService<Ticket> {
       status: TicketStatus.Completed,
       cost: totalCost,
       hours: totalHours,
+      completedAt: outActivity.createdAt,
     });
 
     const updatedTicket = await this.findOneById(ticket.id);

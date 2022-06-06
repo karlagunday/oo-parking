@@ -141,14 +141,14 @@ export class SpaceService extends BaseService<Space> {
           cost =
             Math.floor(roundedHours / 24) * DAILY_RATE +
             (roundedHours - 24) * spaceHourlyRate;
+        } else {
+          /**
+           * Else, add the flat rate on top of the excess hours
+           */
+          const excess =
+            FLAT_RATE_HOURS < roundedHours ? roundedHours - FLAT_RATE_HOURS : 0;
+          cost = excess * spaceHourlyRate + FLAT_RATE;
         }
-
-        /**
-         * Else, add the flat rate on top of the excess hours
-         */
-        const excess =
-          FLAT_RATE_HOURS < roundedHours ? roundedHours - FLAT_RATE_HOURS : 0;
-        cost = excess * spaceHourlyRate + FLAT_RATE;
 
         return {
           spaceId,

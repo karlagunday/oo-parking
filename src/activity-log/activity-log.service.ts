@@ -39,6 +39,17 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
+  getFirstActivityByTicketId(
+    ticketId: string,
+    { where, order, ...options }: FindOneOptions<ActivityLog> = {},
+  ): Promise<ActivityLog | null> {
+    return this.findOne({
+      where: { ticketId, ...where },
+      order: { createdAt: 'ASC', ...order },
+      ...options,
+    });
+  }
+
   getLastActivityByTicketId(
     ticketId: string,
     { where, order, ...options }: FindOneOptions<ActivityLog> = {},
@@ -56,7 +67,7 @@ export class ActivityLogService extends BaseService<ActivityLog> {
   async calculateParkedHoursByTicketId(
     ticketId: string,
   ): Promise<ActivityLogTotalHours[]> {
-    const inActivity = await this.getLastActivityByTicketId(ticketId, {
+    const inActivity = await this.getFirstActivityByTicketId(ticketId, {
       where: { type: ActivityLogType.In },
     });
 

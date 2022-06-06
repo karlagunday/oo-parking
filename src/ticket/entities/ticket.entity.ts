@@ -40,4 +40,11 @@ export class Ticket extends BaseEntity {
 
   @Column({ type: 'float', default: 0 })
   hours?: number;
+
+  @Column({
+    type: 'timestamptz',
+    nullable: true,
+    default: null,
+  })
+  completedAt?: Date;
 }
