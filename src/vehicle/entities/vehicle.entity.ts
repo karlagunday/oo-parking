@@ -1,9 +1,11 @@
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
 import {
   Column,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -23,4 +25,8 @@ export class Vehicle extends BaseEntity {
   @OneToMany(() => ActivityLog, (activityLog) => activityLog.vehicle)
   @JoinColumn()
   activityLogs: ActivityLog[];
+
+  @ManyToOne(() => Ticket, (ticket) => ticket.vehicle)
+  @JoinColumn()
+  tickets!: Ticket[];
 }

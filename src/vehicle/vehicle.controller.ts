@@ -29,4 +29,9 @@ export class VehicleController extends BaseControllerFactory<
   park(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ParkVehicleDto) {
     return this.vehicleService.park(id, dto.entranceId);
   }
+
+  @Post(':id/unpark')
+  unpark(@Param('id', ParseUUIDPipe) id: string) {
+    return this.vehicleService.unpark(id);
+  }
 }
