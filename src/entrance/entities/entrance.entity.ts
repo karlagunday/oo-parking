@@ -20,27 +20,11 @@ export class Entrance extends BaseEntity {
   name!: string;
 
   @Exclude()
-  @OneToMany(() => EntranceSpace, (entranceSpace) => entranceSpace.entrance, {
-    eager: true,
-  })
+  @OneToMany(() => EntranceSpace, (entranceSpace) => entranceSpace.entrance)
   @JoinColumn()
   entranceSpaces!: EntranceSpace[];
 
   @OneToMany(() => ActivityLog, (activityLog) => activityLog.entrance)
   @JoinColumn()
   activityLogs!: ActivityLog[];
-
-  @Expose()
-  get spaces(): SpaceWithDistance[] {
-    /**
-     * @todo fix types
-     */
-    return this.entranceSpaces.map(
-      ({ space, distance }) =>
-        ({
-          ...space,
-          distance,
-        } as unknown as SpaceWithDistance),
-    );
-  }
 }

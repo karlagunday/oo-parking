@@ -18,4 +18,11 @@ export class ActivityLogService extends BaseService<ActivityLog> {
       order: { createdAt: 'DESC' },
     });
   }
+
+  getLastActivityBySpaceId(spaceId: string): Promise<ActivityLog | null> {
+    return this.findOne({
+      where: { spaceId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

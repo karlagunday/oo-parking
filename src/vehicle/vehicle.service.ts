@@ -10,8 +10,10 @@ import { ActivityLogType } from 'src/activity-log/activity-log.types';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
+import { Space } from 'src/space/entities/space.entity';
 import { Repository } from 'typeorm';
 import { Vehicle } from './entities/vehicle.entity';
+import { VehicleParkingResult } from './vehicle.types';
 
 @Injectable()
 export class VehicleService extends BaseService<Vehicle> {
@@ -24,12 +26,10 @@ export class VehicleService extends BaseService<Vehicle> {
     super(vehicleRepository);
   }
 
-  async park(vehicleId: string, entranceId: string) {
-    const entrancesCount = await this.entranceService.count();
-    if (entrancesCount < 3) {
-      throw new MethodNotAllowedException('Parking unavailable');
-    }
-
+  async park(
+    vehicleId: string,
+    entranceId: string,
+  ): Promise<VehicleParkingResult> {
     const vehicle = await this.findOneById(vehicleId);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
@@ -39,29 +39,17 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is already parked');
     }
 
-    const autoSelectedSpace =
-      await this.entranceService.autoSelectAvailableSpaceByVehicleSize(
-        entranceId,
-        vehicle.size,
-      );
-
-    if (!autoSelectedSpace) {
-      throw new MethodNotAllowedException(
-        'No parking space available. Please try another entrance.',
-      );
-    }
-
-    // assign vehicle to selected space
-    await this.activityLogService.create(
-      ActivityLog.construct({
-        entranceId,
-        spaceId: autoSelectedSpace.id,
-        vehicleId,
-        type: ActivityLogType.In,
-      }),
+    const { entrance, space, activityLog } = await this.entranceService.enter(
+      entranceId,
+      vehicle,
     );
 
-    return await this.findOneById(vehicleId);
+    return {
+      vehicle,
+      entrance,
+      space,
+      started: activityLog.createdAt,
+    };
   }
 
   async isParked(id: string) {

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { activityLogProviders } from 'src/activity-log/providers/activity-log.providers';
 import { DatabaseModule } from 'src/database/database.module';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { entranceSpaceProviders } from 'src/entrance-space/providers/entrance-space.providers';
@@ -18,6 +20,8 @@ import { entranceProviders } from './providers/entrance.providers';
     SpaceService,
     ...entranceSpaceProviders,
     EntranceSpaceService,
+    ...activityLogProviders,
+    ActivityLogService,
   ],
 })
 export class EntranceModule {}

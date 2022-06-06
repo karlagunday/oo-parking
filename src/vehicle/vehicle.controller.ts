@@ -1,4 +1,12 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { BaseControllerFactory } from 'src/base/base-controller.factory';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { ParkVehicleDto } from './dto/park-vehicle.dto';
@@ -7,6 +15,7 @@ import { Vehicle } from './entities/vehicle.entity';
 import { VehicleService } from './vehicle.service';
 
 @Controller('vehicles')
+@UseInterceptors(ClassSerializerInterceptor)
 export class VehicleController extends BaseControllerFactory<
   Vehicle,
   CreateVehicleDto,

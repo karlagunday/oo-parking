@@ -1,4 +1,12 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { BaseControllerFactory } from 'src/base/base-controller.factory';
 import { AssignSpaceDto } from './dto/add-space.dto';
 import { CreateEntranceDto } from './dto/create-entrance.dto';
@@ -7,6 +15,7 @@ import { Entrance } from './entities/entrance.entity';
 import { EntranceService } from './entrance.service';
 
 @Controller('entrances')
+@UseInterceptors(ClassSerializerInterceptor)
 export class EntranceController extends BaseControllerFactory<
   Entrance,
   CreateEntranceDto,

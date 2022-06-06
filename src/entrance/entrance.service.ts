@@ -2,20 +2,21 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
+import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
+import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
+import { SpaceWithDistance } from 'src/space/space.types';
+import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
+import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
 import { EntranceSpace } from '../entrance-space/entities/entrance-space.entity';
 import { AssignSpaceDto } from './dto/add-space.dto';
 import { Entrance } from './entities/entrance.entity';
-import { compareDesc } from 'date-fns';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
-import { VehicleSize } from 'src/vehicle/vehicle.types';
-import { Space } from 'src/space/entities/space.entity';
-import { SpaceWithDistance } from 'src/space/space.types';
 
 @Injectable()
 export class EntranceService extends BaseService<Entrance> {
@@ -42,8 +43,10 @@ export class EntranceService extends BaseService<Entrance> {
       throw new NotFoundException('Space not found');
     }
 
-    const existingSpaceIds = entrance.spaces.map(({ id }) => id);
-    if (existingSpaceIds.includes(spaceId)) {
+    const existingSpaces = await this.spaceService.findAllByEntranceId(
+      entranceId,
+    );
+    if (existingSpaces.find(({ id }) => id === spaceId)) {
       throw new BadRequestException('Space already assigned to the entrance');
     }
 
@@ -56,48 +59,63 @@ export class EntranceService extends BaseService<Entrance> {
     );
   }
 
-  async getAvailableSpacesBySize(
-    id: string,
-    vehicleSize: VehicleSize,
-  ): Promise<SpaceWithDistance[]> {
-    /**
-     * @todo disable eager loading spaces and fetch manually
-     * to allow filtering at database level
-     */
-    const entrance = await this.findOneById(id);
+  async enter(
+    entranceId: string,
+    vehicle: Vehicle,
+  ): Promise<{ entrance: Entrance; space: Space; activityLog: ActivityLog }> {
+    if ((await this.count()) < 3) {
+      throw new MethodNotAllowedException('Parking closed');
+    }
 
+    const entrance = await this.findOneById(entranceId);
     if (!entrance) {
       throw new NotFoundException('Entrance not found');
     }
 
-    return entrance.spaces
+    const spaceToPark = await this.autoSelectAvailableSpaceByVehicleSize(
+      entrance,
+      vehicle.size,
+    );
+
+    if (!spaceToPark) {
+      throw new MethodNotAllowedException(
+        'No parking space available. Please try another entrance.',
+      );
+    }
+
+    const activityLog = await this.spaceService.occupy(
+      spaceToPark,
+      entrance,
+      vehicle,
+    );
+
+    return {
+      entrance,
+      activityLog,
+      space: spaceToPark,
+    };
+  }
+
+  async getAvailableSpacesBySize(
+    entrance: Entrance,
+    vehicleSize: VehicleSize,
+  ): Promise<SpaceWithDistance[]> {
+    return (await this.spaceService.findAllByEntranceId(entrance.id))
       .filter(({ size: spaceSize }) =>
         this.spaceService.isVehicleSizeOnSpaceSizeParkAllowed(
           vehicleSize,
           spaceSize,
         ),
       )
-      .filter(({ activityLogs }) => {
-        if (activityLogs.length === 0) {
-          return true;
-        }
-
-        const lastActivty = activityLogs
-          .sort((a, b) =>
-            compareDesc(new Date(a.createdAt), new Date(b.createdAt)),
-          )
-          .pop();
-
-        return lastActivty.type === ActivityLogType.Out;
-      });
+      .filter(({ id }) => this.spaceService.isVacant(id));
   }
 
   async autoSelectAvailableSpaceByVehicleSize(
-    id: string,
+    entrance: Entrance,
     vehicleSize: VehicleSize,
   ): Promise<Space | undefined> {
     const availableSpaces = await this.getAvailableSpacesBySize(
-      id,
+      entrance,
       vehicleSize,
     );
 
