@@ -1,7 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { compareAsc } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
+import {
+  ActivityLogTotalHours,
+  ActivityLogType,
+} from 'src/activity-log/activity-log.types';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
@@ -114,32 +117,46 @@ export class SpaceService extends BaseService<Space> {
       });
   }
 
-  async calculateCost(spaceId: string, hours: number) {
-    const space = await this.findOneById(spaceId);
-
-    if (!space) {
-      throw new NotFoundException('Space not found');
-    }
-
-    const roundedHours = Math.ceil(hours);
-
-    const spaceHourlyRate = hourlyRate[space.size];
+  async calculateCost(activityHours: ActivityLogTotalHours[]) {
     /**
-     * Add the daily rate per 24 hours on top of the excess
-     * if parking hours is at least 24 hours
+     * @todo handle FLAT_RATE addition when hours are of different spaces
+     * Currently, the hours of different spaces are being calculated as if it is a separate ticket
      */
-    if (hours >= 24) {
-      return (
-        Math.floor(roundedHours / 24) * DAILY_RATE +
-        (roundedHours - 24) * spaceHourlyRate
-      );
-    }
+    return await Promise.all(
+      activityHours.map(async ({ spaceId, entranceId, hours }) => {
+        const space = await this.findOneById(spaceId);
 
-    /**
-     * Else, add the flat rate on top of the excess hours
-     */
-    const excess =
-      FLAT_RATE_HOURS < roundedHours ? roundedHours - FLAT_RATE_HOURS : 0;
-    return excess * spaceHourlyRate + FLAT_RATE;
+        if (!space) {
+          throw new NotFoundException(`Space ${spaceId} not found`);
+        }
+
+        const roundedHours = Math.ceil(hours);
+        const spaceHourlyRate = hourlyRate[space.size];
+        let cost = 0;
+        /**
+         * Add the daily rate per 24 hours on top of the excess
+         * if parking hours is at least 24 hours
+         */
+        if (hours >= 24) {
+          cost =
+            Math.floor(roundedHours / 24) * DAILY_RATE +
+            (roundedHours - 24) * spaceHourlyRate;
+        }
+
+        /**
+         * Else, add the flat rate on top of the excess hours
+         */
+        const excess =
+          FLAT_RATE_HOURS < roundedHours ? roundedHours - FLAT_RATE_HOURS : 0;
+        cost = excess * spaceHourlyRate + FLAT_RATE;
+
+        return {
+          spaceId,
+          entranceId,
+          hours,
+          cost,
+        };
+      }),
+    );
   }
 }

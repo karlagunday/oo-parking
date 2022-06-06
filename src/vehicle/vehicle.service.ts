@@ -48,7 +48,7 @@ export class VehicleService extends BaseService<Vehicle> {
       entrance,
       space,
       ticket,
-      started: activityLog.createdAt,
+      logs: [activityLog],
     };
   }
 
@@ -70,6 +70,22 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is not parked');
     }
 
-    return await this.entranceService.exit(vehicle);
+    const { ticket, activityLogs, breakdown } = await this.entranceService.exit(
+      vehicle,
+    );
+
+    return {
+      vehicleId: vehicle.id,
+      ticketNumber: ticket.number,
+      hours: ticket.hours,
+      cost: ticket.cost,
+      logs: activityLogs.map(({ createdAt, entranceId, spaceId, type }) => ({
+        createdAt,
+        entranceId,
+        spaceId,
+        type,
+      })),
+      breakdown,
+    };
   }
 }

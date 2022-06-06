@@ -77,18 +77,31 @@ export class TicketService extends BaseService<Ticket> {
     const parkedHours =
       await this.activityLogService.calculateParkedHoursByTicketId(ticket.id);
 
-    const cost = await this.spaceService.calculateCost(
-      lastActivty.spaceId,
-      parkedHours,
+    const costs = await this.spaceService.calculateCost(parkedHours);
+
+    const { totalCost, totalHours } = costs.reduce(
+      (acc, curr) => ({
+        totalCost: acc.totalCost + curr.cost,
+        totalHours: acc.totalHours + curr.hours,
+      }),
+      {
+        totalCost: 0,
+        totalHours: 0,
+      },
     );
 
     // also mark the ticket as completed
     await this.update(ticket.id, {
       status: TicketStatus.Completed,
-      cost,
-      hours: parkedHours,
+      cost: totalCost,
+      hours: totalHours,
     });
 
-    return this.findOneById(ticket.id);
+    const updatedTicket = await this.findOneById(ticket.id);
+
+    return {
+      ticket: updatedTicket,
+      breakdown: costs,
+    };
   }
 }

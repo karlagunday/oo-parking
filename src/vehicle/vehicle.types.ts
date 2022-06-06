@@ -1,3 +1,4 @@
+import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { Entrance } from 'src/entrance/entities/entrance.entity';
 import { Space } from 'src/space/entities/space.entity';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
@@ -14,5 +15,5 @@ export type VehicleParkingResult = {
   entrance: Entrance;
   space: Space;
   ticket: Ticket;
-  started: Date;
+  logs: Partial<ActivityLog>[];
 };

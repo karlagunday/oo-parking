@@ -5,6 +5,7 @@ import {
   MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
@@ -27,6 +28,7 @@ export class EntranceService extends BaseService<Entrance> {
     private spaceService: SpaceService,
     private entranceSpaceService: EntranceSpaceService,
     private ticketService: TicketService,
+    private activityLogService: ActivityLogService,
   ) {
     super(entranceRepository);
   }
@@ -121,6 +123,17 @@ export class EntranceService extends BaseService<Entrance> {
   }
 
   async exit(vehicle: Vehicle) {
-    return await this.ticketService.checkOutVehicle(vehicle);
+    const { ticket, breakdown } = await this.ticketService.checkOutVehicle(
+      vehicle,
+    );
+    const activityLogs = await this.activityLogService.getAllByTicketId(
+      ticket.id,
+    );
+
+    return {
+      ticket,
+      breakdown,
+      activityLogs,
+    };
   }
 }

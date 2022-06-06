@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { differenceInSeconds } from 'date-fns';
 import { BaseService } from 'src/base/base.service';
 import { FindOneOptions, Repository } from 'typeorm';
-import { ActivityLogType } from './activity-log.types';
+import { ActivityLogTotalHours, ActivityLogType } from './activity-log.types';
 import { ActivityLog } from './entities/activity-log.entity';
 
 @Injectable()
@@ -32,6 +32,13 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
+  getAllByTicketId(ticketId: string) {
+    return this.findAll({
+      where: { ticketId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   getLastActivityByTicketId(
     ticketId: string,
     { where, order, ...options }: FindOneOptions<ActivityLog> = {},
@@ -43,7 +50,12 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
-  async calculateParkedHoursByTicketId(ticketId: string) {
+  /**
+   * @todo handle activities of different space types?
+   */
+  async calculateParkedHoursByTicketId(
+    ticketId: string,
+  ): Promise<ActivityLogTotalHours[]> {
     const inActivity = await this.getLastActivityByTicketId(ticketId, {
       where: { type: ActivityLogType.In },
     });
@@ -58,8 +70,18 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     );
 
     /**
-     * Manually convert to hours to be precise
+     * Assuming all activities of a ticket are in the same entrance, space
      */
-    return durationInSeconds / 60 / 60;
+    return [
+      {
+        entranceId: outActivity.entranceId,
+        spaceId: outActivity.spaceId,
+
+        /**
+         * Manually convert to hours to be precise
+         */
+        hours: durationInSeconds / 60 / 60,
+      },
+    ];
   }
 }
