@@ -60,6 +60,10 @@ export class EntranceService extends BaseService<Entrance> {
     id: string,
     vehicleSize: VehicleSize,
   ): Promise<SpaceWithDistance[]> {
+    /**
+     * @todo disable eager loading spaces and fetch manually
+     * to allow filtering at database level
+     */
     const entrance = await this.findOneById(id);
 
     if (!entrance) {
@@ -91,7 +95,7 @@ export class EntranceService extends BaseService<Entrance> {
   async autoSelectAvailableSpaceByVehicleSize(
     id: string,
     vehicleSize: VehicleSize,
-  ): Promise<Space> {
+  ): Promise<Space | undefined> {
     const availableSpaces = await this.getAvailableSpacesBySize(
       id,
       vehicleSize,

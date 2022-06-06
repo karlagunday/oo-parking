@@ -45,6 +45,12 @@ export class VehicleService extends BaseService<Vehicle> {
         vehicle.size,
       );
 
+    if (!autoSelectedSpace) {
+      throw new MethodNotAllowedException(
+        'No parking space available. Please try another entrance.',
+      );
+    }
+
     // assign vehicle to selected space
     await this.activityLogService.create(
       ActivityLog.construct({
