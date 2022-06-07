@@ -11,4 +11,7 @@ export class EntranceSpaceService extends BaseService<EntranceSpace> {
   ) {
     super(entranceSpaceRepository);
   }
+  /**
+   * @todo move entrance spaces logic here to improve separation of concerns
+   */
 }
