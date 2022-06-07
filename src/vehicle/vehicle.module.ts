@@ -11,6 +11,8 @@ import { spaceProviders } from 'src/space/providers/space.providers';
 import { SpaceService } from 'src/space/space.service';
 import { entranceSpaceProviders } from 'src/entrance-space/providers/entrance-space.providers';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
+import { ticketProviders } from 'src/ticket/providers/ticket.providers';
+import { TicketService } from 'src/ticket/ticket.service';
 
 @Module({
   controllers: [VehicleController],
@@ -26,6 +28,8 @@ import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service'
     SpaceService,
     ...entranceSpaceProviders,
     EntranceSpaceService,
+    ...ticketProviders,
+    TicketService,
   ],
 })
 export class VehicleModule {}

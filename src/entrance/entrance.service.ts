@@ -5,12 +5,14 @@ import {
   MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
-import { SpaceWithDistance } from 'src/space/space.types';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
+import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
@@ -25,6 +27,8 @@ export class EntranceService extends BaseService<Entrance> {
     private entranceRepository: Repository<Entrance>,
     private spaceService: SpaceService,
     private entranceSpaceService: EntranceSpaceService,
+    private ticketService: TicketService,
+    private activityLogService: ActivityLogService,
   ) {
     super(entranceRepository);
   }
@@ -62,7 +66,12 @@ export class EntranceService extends BaseService<Entrance> {
   async enter(
     entranceId: string,
     vehicle: Vehicle,
-  ): Promise<{ entrance: Entrance; space: Space; activityLog: ActivityLog }> {
+  ): Promise<{
+    entrance: Entrance;
+    space: Space;
+    activityLog: ActivityLog;
+    ticket: Ticket;
+  }> {
     if ((await this.count()) < 3) {
       throw new MethodNotAllowedException('Parking closed');
     }
@@ -83,42 +92,48 @@ export class EntranceService extends BaseService<Entrance> {
       );
     }
 
+    const ticket = await this.ticketService.getTicketForVehicle(vehicle);
+
     const activityLog = await this.spaceService.occupy(
       spaceToPark,
       entrance,
       vehicle,
+      ticket,
     );
 
     return {
       entrance,
       activityLog,
       space: spaceToPark,
+      ticket,
     };
-  }
-
-  async getAvailableSpacesBySize(
-    entrance: Entrance,
-    vehicleSize: VehicleSize,
-  ): Promise<SpaceWithDistance[]> {
-    return (await this.spaceService.findAllByEntranceId(entrance.id))
-      .filter(({ size: spaceSize }) =>
-        this.spaceService.isVehicleSizeOnSpaceSizeParkAllowed(
-          vehicleSize,
-          spaceSize,
-        ),
-      )
-      .filter(({ id }) => this.spaceService.isVacant(id));
   }
 
   async autoSelectAvailableSpaceByVehicleSize(
     entrance: Entrance,
     vehicleSize: VehicleSize,
   ): Promise<Space | undefined> {
-    const availableSpaces = await this.getAvailableSpacesBySize(
-      entrance,
-      vehicleSize,
-    );
+    const availableSpaces =
+      await this.spaceService.getAvailableEntranceSpacesForVehicleSize(
+        entrance.id,
+        vehicleSize,
+      );
 
     return availableSpaces.sort((a, b) => b.distance - a.distance).pop();
+  }
+
+  async exit(vehicle: Vehicle) {
+    const { ticket, breakdown } = await this.ticketService.checkOutVehicle(
+      vehicle,
+    );
+    const activityLogs = await this.activityLogService.getAllByTicketId(
+      ticket.id,
+    );
+
+    return {
+      ticket,
+      breakdown,
+      activityLogs,
+    };
   }
 }

@@ -1,10 +1,21 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { compareAsc } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
+import {
+  ActivityLogTotalHours,
+  ActivityLogType,
+} from 'src/activity-log/activity-log.types';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Entrance } from 'src/entrance/entities/entrance.entity';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
+import {
+  DAILY_RATE,
+  FLAT_RATE,
+  FLAT_RATE_HOURS,
+  hourlyRate,
+} from 'src/utils/constants';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
@@ -51,6 +62,7 @@ export class SpaceService extends BaseService<Space> {
     space: Space,
     entrance: Entrance,
     vehicle: Vehicle,
+    ticket: Ticket,
   ): Promise<ActivityLog> {
     // assign vehicle to a space
     return this.activityLogService.create(
@@ -58,16 +70,93 @@ export class SpaceService extends BaseService<Space> {
         entranceId: entrance.id,
         spaceId: space.id,
         vehicleId: vehicle.id,
+        ticketId: ticket.id,
         type: ActivityLogType.In,
       }),
     );
   }
 
-  async isVacant(id: string) {
-    const lastActivity = await this.activityLogService.getLastActivityBySpaceId(
-      id,
+  /**
+   * @todo simplify by doing JOINs
+   */
+  async getAvailableEntranceSpacesForVehicleSize(
+    entranceId: string,
+    vehicleSize: VehicleSize,
+  ): Promise<SpaceWithDistance[]> {
+    const spaces = (
+      await this.entranceSpacesService.findAll({
+        where: { entranceId },
+        relations: ['space', 'space.activityLogs'],
+      })
+    ).map(
+      ({ space, distance }) =>
+        ({
+          /**
+           * @todo remove timestamps not being intercepted by the interceptor
+           */
+          ...space,
+          distance,
+        } as SpaceWithDistance),
     );
 
-    return !lastActivity || lastActivity.type === ActivityLogType.Out;
+    return spaces
+      .filter(({ size: spaceSize }) =>
+        this.isVehicleSizeOnSpaceSizeParkAllowed(vehicleSize, spaceSize),
+      )
+      .filter(({ activityLogs }) => {
+        if (activityLogs.length === 0) {
+          return true;
+        }
+        const lastActivty = activityLogs
+          .sort((a, b) =>
+            compareAsc(new Date(a.createdAt), new Date(b.createdAt)),
+          )
+          .pop();
+
+        return lastActivty.type === ActivityLogType.Out;
+      });
+  }
+
+  async calculateCost(activityHours: ActivityLogTotalHours[]) {
+    /**
+     * @todo handle FLAT_RATE addition when hours are of different spaces
+     * Currently, the hours of different spaces are being calculated as if it is a separate ticket
+     */
+    return await Promise.all(
+      activityHours.map(async ({ spaceId, entranceId, hours }) => {
+        const space = await this.findOneById(spaceId);
+
+        if (!space) {
+          throw new NotFoundException(`Space ${spaceId} not found`);
+        }
+
+        const roundedHours = Math.ceil(hours);
+        const spaceHourlyRate = hourlyRate[space.size];
+        let cost = 0;
+        /**
+         * Add the daily rate per 24 hours on top of the excess
+         * if parking hours is at least 24 hours
+         */
+        if (hours >= 24) {
+          cost =
+            Math.floor(roundedHours / 24) * DAILY_RATE +
+            (roundedHours - 24) * spaceHourlyRate;
+        } else {
+          /**
+           * Else, add the flat rate on top of the excess hours
+           */
+          const excess =
+            FLAT_RATE_HOURS < roundedHours ? roundedHours - FLAT_RATE_HOURS : 0;
+          cost = excess * spaceHourlyRate + FLAT_RATE;
+        }
+
+        return {
+          spaceId,
+          entranceId,
+          hours,
+          cost,
+        };
+      }),
+    );
   }
 }

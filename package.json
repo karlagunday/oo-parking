@@ -22,7 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:dev:rm": "docker compose rm dev-db -s -f -v",
     "db:dev:up": "docker compose up dev-db -d",
-    "db:migrations:generate": "yarn typeorm migration:generate",
+    "db:migrations:generate": "yarn db:migrations:run && yarn typeorm migration:generate",
     "db:migrations:run": "yarn typeorm migration:run",
     "db:dev:reset": "yarn db:dev:rm && yarn db:dev:up && yarn build && yarn db:migrations:run"
   },

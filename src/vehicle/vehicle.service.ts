@@ -2,15 +2,14 @@ import {
   BadRequestException,
   Inject,
   Injectable,
-  MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ActivityLogType } from 'src/activity-log/activity-log.types';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
-import { Space } from 'src/space/entities/space.entity';
+import { SpaceService } from 'src/space/space.service';
+import { TicketService } from 'src/ticket/ticket.service';
 import { Repository } from 'typeorm';
 import { Vehicle } from './entities/vehicle.entity';
 import { VehicleParkingResult } from './vehicle.types';
@@ -22,6 +21,8 @@ export class VehicleService extends BaseService<Vehicle> {
     private vehicleRepository: Repository<Vehicle>,
     private entranceService: EntranceService,
     private activityLogService: ActivityLogService,
+    private spaceService: SpaceService,
+    private ticketService: TicketService,
   ) {
     super(vehicleRepository);
   }
@@ -39,23 +40,52 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is already parked');
     }
 
-    const { entrance, space, activityLog } = await this.entranceService.enter(
-      entranceId,
-      vehicle,
-    );
+    const { entrance, space, activityLog, ticket } =
+      await this.entranceService.enter(entranceId, vehicle);
 
     return {
       vehicle,
       entrance,
       space,
-      started: activityLog.createdAt,
+      ticket,
+      logs: [activityLog],
     };
   }
 
   async isParked(id: string) {
-    const lastActivty =
-      await this.activityLogService.getLastActivityByVehicleId(id);
+    return !!(await this.ticketService.getActiveTicketByVehicleId(id));
+  }
 
-    return lastActivty?.type === ActivityLogType.In;
+  async isUnparked(id: string) {
+    return !(await this.isParked(id));
+  }
+
+  async unpark(vehicleId: string) {
+    const vehicle = await this.findOneById(vehicleId);
+    if (!vehicle) {
+      throw new NotFoundException('Vehicle not found');
+    }
+
+    if (await this.isUnparked(vehicleId)) {
+      throw new BadRequestException('Vehicle is not parked');
+    }
+
+    const { ticket, activityLogs, breakdown } = await this.entranceService.exit(
+      vehicle,
+    );
+
+    return {
+      vehicleId: vehicle.id,
+      ticketNumber: ticket.number,
+      hours: ticket.hours,
+      cost: ticket.cost,
+      logs: activityLogs.map(({ createdAt, entranceId, spaceId, type }) => ({
+        createdAt,
+        entranceId,
+        spaceId,
+        type,
+      })),
+      breakdown,
+    };
   }
 }

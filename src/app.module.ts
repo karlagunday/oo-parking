@@ -5,6 +5,7 @@ import { VehicleModule } from './vehicle/vehicle.module';
 import { EntranceModule } from './entrance/entrance.module';
 import { EntranceSpaceModule } from './entrance-space/entrance-space.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ActivityLogModule } from './activity-log/activity-log.module';
     EntranceModule,
     EntranceSpaceModule,
     ActivityLogModule,
+    TicketModule,
   ],
   providers: [],
 })

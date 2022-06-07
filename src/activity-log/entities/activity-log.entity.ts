@@ -1,6 +1,7 @@
 import { BaseEntity } from 'src/base/base.entity';
 import { Entrance } from 'src/entrance/entities/entrance.entity';
 import { Space } from 'src/space/entities/space.entity';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import {
   Column,
@@ -39,4 +40,11 @@ export class ActivityLog extends BaseEntity {
 
   @Column({ type: 'enum', enum: ActivityLogType })
   type!: ActivityLogType;
+
+  @Column({ type: 'uuid' })
+  ticketId!: string;
+
+  @ManyToOne(() => Ticket, (ticket) => ticket.activityLogs)
+  @JoinColumn()
+  ticket!: Ticket;
 }
