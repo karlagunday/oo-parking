@@ -14,10 +14,16 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     super(activityLogRepository);
   }
 
+  /**
+   * Gets the last activity of the specified ID
+   * @param {string} vehicleId Id of the vehicle
+   * @param {FindOneOptions<ActivityLog>} [options] find one options
+   * @returns {Promise<ActivityLog | null>} resulting activity log
+   */
   getLastActivityByVehicleId(
     vehicleId: string,
     { where, order, ...options }: FindOneOptions<ActivityLog> = {},
-  ) {
+  ): Promise<ActivityLog | null> {
     return this.findOne({
       where: { vehicleId, ...where },
       order: { createdAt: 'DESC', ...order },
@@ -25,6 +31,11 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
+  /**
+   * Gets the last activity of the specified space ID
+   * @param {string} spaceId id of the space
+   * @returns {Proimise<ActivityLog | null>} resulting activity log
+   */
   getLastActivityBySpaceId(spaceId: string): Promise<ActivityLog | null> {
     return this.findOne({
       where: { spaceId },
@@ -32,13 +43,24 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
-  getAllByTicketId(ticketId: string) {
+  /**
+   * Get all activities of specified ticket ID
+   * @param {string} ticketId id of the ticket
+   * @returns {Promise<AcitivtyLog[]>} resulting activity logs
+   */
+  getAllByTicketId(ticketId: string): Promise<ActivityLog[]> {
     return this.findAll({
       where: { ticketId },
       order: { createdAt: 'DESC' },
     });
   }
 
+  /**
+   * Get the first activity of the specified ticket id
+   * @param {string} ticketId  id of the ticket
+   * @param {FindOneOptions<ActivityLog>} [options] find one options
+   * @returns {Promise<ActivityLog | null>} resulting activity log
+   */
   getFirstActivityByTicketId(
     ticketId: string,
     { where, order, ...options }: FindOneOptions<ActivityLog> = {},
@@ -50,6 +72,12 @@ export class ActivityLogService extends BaseService<ActivityLog> {
     });
   }
 
+  /**
+   * Get the last activity of the specified ticket Id
+   * @param {string} ticketId id of the ticket
+   * @param {FindOneOptions<ActivityLog>} [options] find one options
+   * @returns {Promise<ActivityLog | null>} resulting activity log
+   */
   getLastActivityByTicketId(
     ticketId: string,
     { where, order, ...options }: FindOneOptions<ActivityLog> = {},
@@ -62,7 +90,12 @@ export class ActivityLogService extends BaseService<ActivityLog> {
   }
 
   /**
-   * @todo handle activities of different space types?
+   * Calculate the parked hours by the specified ticket id.
+   * This groups the total hours by space id
+   * @param {string} ticketId id of the ticket
+   * @returns {Promise<ActivityLogTotalHours[]>} Total hours by the ticket per space
+   * @todo Currently assuming that all activity logs per ticket are all for the same space
+   * Update to support handling activity logs of different spaces
    */
   async calculateParkedHoursByTicketId(
     ticketId: string,

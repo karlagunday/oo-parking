@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { differenceInMinutes } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ActivityLogType } from 'src/activity-log/activity-log.types';
@@ -14,7 +9,7 @@ import { CONTINUOUS_RATE_MINS } from 'src/utils/constants';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
-import { TicketStatus } from './ticket.types';
+import { TicketCheckoutResult, TicketStatus } from './ticket.types';
 
 @Injectable()
 export class TicketService extends BaseService<Ticket> {
@@ -27,6 +22,11 @@ export class TicketService extends BaseService<Ticket> {
     super(ticketRepository);
   }
 
+  /**
+   * Retrieves the current active ticket for a vehicle
+   * @param {string} vehicleId id of the vehicle to retrieve the ticket for
+   * @returns {Promise<Ticket>} resulting ticket
+   */
   getActiveTicketByVehicleId(vehicleId: string) {
     return this.findOne({
       where: {
@@ -43,6 +43,11 @@ export class TicketService extends BaseService<Ticket> {
     });
   }
 
+  /**
+   * Issues a new ticket, or reissues an existing one for the vehicle
+   * @param {Vehicle} vehicle vehicle to issue a ticket for
+   * @returns {Promise<Ticket>} issued ticket
+   */
   async getTicketForVehicle(vehicle: Vehicle) {
     const lastTicket = await this.findOne({
       where: {
@@ -59,13 +64,6 @@ export class TicketService extends BaseService<Ticket> {
         now,
         new Date(lastTicket.completedAt),
       );
-
-      console.log({
-        now,
-        completedAt: lastTicket.completedAt,
-        ticketNumber: lastTicket.number,
-        minutesFromLastCheckout,
-      });
 
       // reuse last ticket if checking in within the countinuous rate mins after last checkout
       if (minutesFromLastCheckout <= CONTINUOUS_RATE_MINS) {
@@ -89,7 +87,12 @@ export class TicketService extends BaseService<Ticket> {
     );
   }
 
-  async checkOutVehicle(vehicle: Vehicle) {
+  /**
+   * Checks out a vehicle from its currently parked space
+   * @param {Vehicle} vehicle vehicle to check out
+   * @returns {Promise<TicketCheckoutResult>} costs breakdown of the parked vehicle
+   */
+  async checkOutVehicle(vehicle: Vehicle): Promise<TicketCheckoutResult> {
     const ticket = await this.getActiveTicketByVehicleId(vehicle.id);
 
     const lastActivty =

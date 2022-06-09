@@ -20,7 +20,11 @@ import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
 import { Space } from './entities/space.entity';
-import { SpaceSize, SpaceWithDistance } from './space.types';
+import {
+  SpaceCalculationResult,
+  SpaceSize,
+  SpaceWithDistance,
+} from './space.types';
 
 @Injectable()
 export class SpaceService extends BaseService<Space> {
@@ -33,6 +37,11 @@ export class SpaceService extends BaseService<Space> {
     super(spaceRepository);
   }
 
+  /**
+   * Retrieves all spaces assigned to the entrance of id
+   * @param {string} entranceId id of entrance to retrieve the spaces for
+   * @returns {Promise<SpaceWithDistance[]>} resulting space with its distance from the entrance
+   */
   async findAllByEntranceId(entranceId: string): Promise<SpaceWithDistance[]> {
     return (
       await this.entranceSpacesService.findAll({
@@ -51,6 +60,12 @@ export class SpaceService extends BaseService<Space> {
     );
   }
 
+  /**
+   * Checks if the vehcile size is allowed to park in a space of size
+   * @param {VehicleSize} vehicleSize size of the vehicle to check
+   * @param {SpaceSize} spaceSize size of the vehicle to check
+   * @returns {boolean} returns true if the vehicle size can park on a space of size, false otherwise
+   */
   isVehicleSizeOnSpaceSizeParkAllowed(
     vehicleSize: VehicleSize,
     spaceSize: SpaceSize,
@@ -58,13 +73,20 @@ export class SpaceService extends BaseService<Space> {
     return vehicleSize <= spaceSize;
   }
 
+  /**
+   * Sets the space as occupied by a vehicle
+   * @param {Space} space space to occupy
+   * @param {Entrance} entrance entrance where the vehicle entered
+   * @param {Vehicle} vehicle vehicle to park
+   * @param {Ticket} ticket ticket issued on entry of the vehicle
+   * @returns {Promise<ActivityLog>} resulting IN activity log
+   */
   occupy(
     space: Space,
     entrance: Entrance,
     vehicle: Vehicle,
     ticket: Ticket,
   ): Promise<ActivityLog> {
-    // assign vehicle to a space
     return this.activityLogService.create(
       ActivityLog.construct({
         entranceId: entrance.id,
@@ -77,7 +99,10 @@ export class SpaceService extends BaseService<Space> {
   }
 
   /**
-   * @todo simplify by doing JOINs
+   * Retrieves all vacant spaces of the entrance that a vehicle of size can park to
+   * @param {string} entranceId entrance to check vacant spaces for
+   * @param {VehicleSize} vehicleSize vehicle size to check if allowed to park in the spaces
+   * @returns {Promise<SpaceWithDistance[]} resulting spaces with distances
    */
   async getAvailableEntranceSpacesForVehicleSize(
     entranceId: string,
@@ -117,11 +142,16 @@ export class SpaceService extends BaseService<Space> {
       });
   }
 
-  async calculateCost(activityHours: ActivityLogTotalHours[]) {
-    /**
-     * @todo handle FLAT_RATE addition when hours are of different spaces
-     * Currently, the hours of different spaces are being calculated as if it is a separate ticket
-     */
+  /**
+   * Calculates the cost of an array of parking sessions
+   * @param {ActivityLogTotalHours[]} activityHours actual hours spent per space
+   * @returns {Promise<SpaceCalculationResult[]>} calculated parking cost per space
+   * @todo handle FLAT_RATE addition when hours are of different spaces
+   * Currently, the hours of different spaces are being calculated as if it is a separate ticket
+   */
+  async calculateCost(
+    activityHours: ActivityLogTotalHours[],
+  ): Promise<SpaceCalculationResult[]> {
     return await Promise.all(
       activityHours.map(async ({ spaceId, entranceId, hours }) => {
         const space = await this.findOneById(spaceId);
@@ -137,10 +167,10 @@ export class SpaceService extends BaseService<Space> {
          * Add the daily rate per 24 hours on top of the excess
          * if parking hours is at least 24 hours
          */
-        if (hours >= 24) {
+        if (roundedHours >= 24) {
+          const days = Math.floor(roundedHours / 24);
           cost =
-            Math.floor(roundedHours / 24) * DAILY_RATE +
-            (roundedHours - 24) * spaceHourlyRate;
+            days * DAILY_RATE + (roundedHours - days * 24) * spaceHourlyRate;
         } else {
           /**
            * Else, add the flat rate on top of the excess hours

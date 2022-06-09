@@ -10,3 +10,10 @@ export enum SpaceSize {
 export interface SpaceWithDistance
   extends Space,
     Pick<EntranceSpace, 'distance'> {}
+
+export type SpaceCalculationResult = {
+  spaceId: string;
+  entranceId: string;
+  hours: number;
+  cost: number;
+};
