@@ -4,15 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
-import { SpaceService } from 'src/space/space.service';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Repository } from 'typeorm';
 import { Vehicle } from './entities/vehicle.entity';
-import { VehicleParkingResult } from './vehicle.types';
+import { VehicleParkingResult, VehicleUnparkingResult } from './vehicle.types';
 
 @Injectable()
 export class VehicleService extends BaseService<Vehicle> {
@@ -20,13 +17,17 @@ export class VehicleService extends BaseService<Vehicle> {
     @Inject(Vehicle.name)
     private vehicleRepository: Repository<Vehicle>,
     private entranceService: EntranceService,
-    private activityLogService: ActivityLogService,
-    private spaceService: SpaceService,
     private ticketService: TicketService,
   ) {
     super(vehicleRepository);
   }
 
+  /**
+   * Parks a vehicle
+   * @param {string} vehicleId id of vehicle to park
+   * @param {string} entranceId id of entrance the vehicle is about to enter
+   * @returns {Promise<VehicleParkingResult>} parking result
+   */
   async park(
     vehicleId: string,
     entranceId: string,
@@ -52,15 +53,30 @@ export class VehicleService extends BaseService<Vehicle> {
     };
   }
 
-  async isParked(id: string) {
+  /**
+   * Checks if the vehicle is currently parked
+   * @param {string} id id of the vehicle to check
+   * @returns {Promise<boolean>} true if parked, false otherwise
+   */
+  async isParked(id: string): Promise<boolean> {
     return !!(await this.ticketService.getActiveTicketByVehicleId(id));
   }
 
-  async isUnparked(id: string) {
+  /**
+   * Checks if the vehicle is unparked
+   * @param {string} id id of the vehicle to check
+   * @returns {Promise<boolean>} true if unparked, false otherwise
+   */
+  async isUnparked(id: string): Promise<boolean> {
     return !(await this.isParked(id));
   }
 
-  async unpark(vehicleId: string) {
+  /**
+   * Unparks a parked vehicle
+   * @param {string} vehicleId id of the vehicle to unpark
+   * @returns {Promise<VehicleUnparkingResult>} unpark result
+   */
+  async unpark(vehicleId: string): Promise<VehicleUnparkingResult> {
     const vehicle = await this.findOneById(vehicleId);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
