@@ -6,5 +6,6 @@ import { activityLogProviders } from './providers/activity-log.providers';
 @Module({
   imports: [DatabaseModule],
   providers: [...activityLogProviders, ActivityLogService],
+  exports: [ActivityLogService],
 })
 export class ActivityLogModule {}

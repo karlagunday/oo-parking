@@ -1,25 +1,19 @@
-import { Module } from '@nestjs/common';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { activityLogProviders } from 'src/activity-log/providers/activity-log.providers';
+import { forwardRef, Module } from '@nestjs/common';
+import { ActivityLogModule } from 'src/activity-log/activity-log.module';
 import { DatabaseModule } from 'src/database/database.module';
-import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
-import { entranceSpaceProviders } from 'src/entrance-space/providers/entrance-space.providers';
-import { spaceProviders } from 'src/space/providers/space.providers';
-import { SpaceService } from 'src/space/space.service';
+import { EntranceSpaceModule } from 'src/entrance-space/entrance-space.module';
+import { SpaceModule } from 'src/space/space.module';
 import { ticketProviders } from './providers/ticket.providers';
 import { TicketService } from './ticket.service';
 
 @Module({
-  imports: [DatabaseModule],
-  providers: [
-    ...ticketProviders,
-    TicketService,
-    ...activityLogProviders,
-    ActivityLogService,
-    ...spaceProviders,
-    SpaceService,
-    ...entranceSpaceProviders,
-    EntranceSpaceService,
+  imports: [
+    DatabaseModule,
+    forwardRef(() => ActivityLogModule),
+    forwardRef(() => SpaceModule),
+    forwardRef(() => EntranceSpaceModule),
   ],
+  providers: [...ticketProviders, TicketService],
+  exports: [TicketService],
 })
 export class TicketModule {}

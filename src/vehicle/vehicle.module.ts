@@ -1,27 +1,21 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { DatabaseModule } from 'src/database/database.module';
-import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
-import { entranceSpaceProviders } from 'src/entrance-space/providers/entrance-space.providers';
-import { EntranceService } from 'src/entrance/entrance.service';
-import { entranceProviders } from 'src/entrance/providers/entrance.providers';
-import { ticketProviders } from 'src/ticket/providers/ticket.providers';
-import { TicketService } from 'src/ticket/ticket.service';
+import { EntranceSpaceModule } from 'src/entrance-space/entrance-space.module';
+import { EntranceModule } from 'src/entrance/entrance.module';
+import { TicketModule } from 'src/ticket/ticket.module';
 import { vehicleProviders } from './providers/vehicle.providers';
 import { VehicleController } from './vehicle.controller';
 import { VehicleService } from './vehicle.service';
 
 @Module({
   controllers: [VehicleController],
-  imports: [DatabaseModule],
-  providers: [
-    ...vehicleProviders,
-    VehicleService,
-    ...entranceProviders,
-    EntranceService,
-    ...entranceSpaceProviders,
-    EntranceSpaceService,
-    ...ticketProviders,
-    TicketService,
+  imports: [
+    DatabaseModule,
+    forwardRef(() => EntranceModule),
+    forwardRef(() => EntranceSpaceModule),
+    forwardRef(() => TicketModule),
   ],
+  providers: [...vehicleProviders, VehicleService],
+  exports: [VehicleService],
 })
 export class VehicleModule {}

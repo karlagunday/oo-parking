@@ -6,5 +6,6 @@ import { entranceSpaceProviders } from './providers/entrance-space.providers';
 @Module({
   imports: [DatabaseModule],
   providers: [...entranceSpaceProviders, EntranceSpaceService],
+  exports: [EntranceSpaceService],
 })
 export class EntranceSpaceModule {}
