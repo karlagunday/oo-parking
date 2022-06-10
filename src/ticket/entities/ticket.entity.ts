@@ -1,5 +1,7 @@
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
+import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
+
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import {
   Column,
@@ -47,4 +49,8 @@ export class Ticket extends BaseEntity {
     default: null,
   })
   completedAt?: Date;
+
+  @OneToMany(() => ParkingSession, (parkingSession) => parkingSession.ticket)
+  @JoinColumn()
+  parkingSessions: ParkingSession[];
 }

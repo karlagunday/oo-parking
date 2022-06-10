@@ -6,6 +6,7 @@ import { EntranceModule } from './entrance/entrance.module';
 import { EntranceSpaceModule } from './entrance-space/entrance-space.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { TicketModule } from './ticket/ticket.module';
+import { ParkingSessionModule } from './parking-session/parking-session.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { TicketModule } from './ticket/ticket.module';
     EntranceSpaceModule,
     ActivityLogModule,
     TicketModule,
+    ParkingSessionModule,
   ],
   providers: [],
 })
