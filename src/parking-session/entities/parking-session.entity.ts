@@ -50,4 +50,13 @@ export class ParkingSession extends BaseEntity {
 
   @Column({ type: 'enum', enum: ParkingSessionStatus })
   status!: ParkingSessionStatus;
+
+  @Column({ type: 'float', default: 0 })
+  cost?: number;
+
+  @Column({ type: 'float', default: 0 })
+  totalHours?: number;
+
+  @Column({ type: 'float', default: 0 })
+  paidHours?: number;
 }

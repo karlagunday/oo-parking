@@ -7,7 +7,7 @@ import {
   ActivityLogType,
 } from 'src/activity-log/activity-log.types';
 import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
-import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
+import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { SpaceService } from 'src/space/space.service';
 import { SpaceCalculationResult } from 'src/space/space.types';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -60,6 +60,10 @@ describe('TicketService', () => {
         {
           provide: SpaceService,
           useValue: mockedSpaceService,
+        },
+        {
+          provide: ParkingSessionService,
+          useValue: {},
         },
       ],
     }).compile();
@@ -184,8 +188,6 @@ describe('TicketService', () => {
           expect(updateSpy).toHaveBeenCalledWith(completedTicket.id, {
             status: TicketStatus.Active,
             completedAt: null,
-            cost: 0,
-            hours: 0,
           });
           expect(findOneByIdSpy).toHaveBeenCalledWith(completedTicket.id);
 

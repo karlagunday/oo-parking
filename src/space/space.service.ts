@@ -1,22 +1,27 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { compareAsc } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import {
   ActivityLogTotalHours,
   ActivityLogType,
 } from 'src/activity-log/activity-log.types';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
-import { Entrance } from 'src/entrance/entities/entrance.entity';
-import { Ticket } from 'src/ticket/entities/ticket.entity';
+import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
+import { ParkingSessionService } from 'src/parking-session/parking-session.service';
+import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
 import {
   DAILY_RATE,
   FLAT_RATE,
   FLAT_RATE_HOURS,
   hourlyRate,
 } from 'src/utils/constants';
-import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
 import { Space } from './entities/space.entity';
@@ -33,6 +38,8 @@ export class SpaceService extends BaseService<Space> {
     private spaceRepository: Repository<Space>,
     private activityLogService: ActivityLogService,
     private entranceSpacesService: EntranceSpaceService,
+    @Inject(forwardRef(() => ParkingSessionService))
+    private parkingSessionService: ParkingSessionService,
   ) {
     super(spaceRepository);
   }
@@ -74,28 +81,49 @@ export class SpaceService extends BaseService<Space> {
   }
 
   /**
-   * Sets the space as occupied by a vehicle
-   * @param {Space} space space to occupy
-   * @param {Entrance} entrance entrance where the vehicle entered
-   * @param {Vehicle} vehicle vehicle to park
-   * @param {Ticket} ticket ticket issued on entry of the vehicle
-   * @returns {Promise<ActivityLog>} resulting IN activity log
+   * Checks if a space is vacant, meaning if it does not have any active sessions
+   * @param {string} id space to check
+   * @returns {Promise<boolean>} true if vacant, false otherwise
    */
-  occupy(
-    space: Space,
-    entrance: Entrance,
-    vehicle: Vehicle,
-    ticket: Ticket,
-  ): Promise<ActivityLog> {
-    return this.activityLogService.create(
-      ActivityLog.construct({
-        entranceId: entrance.id,
-        spaceId: space.id,
-        vehicleId: vehicle.id,
-        ticketId: ticket.id,
-        type: ActivityLogType.In,
-      }),
+  async isVacant(id: string) {
+    return !(await this.parkingSessionService.findOne({
+      where: { spaceId: id, status: ParkingSessionStatus.Started },
+    }));
+  }
+
+  /**
+   * Checks if a space is occupied, meaning if the space has an active session
+   * @param {string} id space to check
+   * @returns {Promise<boolean>} true if occupied, false otherwise
+   */
+  async isOccupied(id: string) {
+    return !(await this.isVacant(id));
+  }
+
+  /**
+   * Sets the space as occupied
+   * @param {string} ticketId ticket of the session
+   * @param {string} entranceId entrance where the occupant came from
+   * @param {string} spaceId space to occupy
+   * @returns {Promise<ParkingSession} resulting parking session
+   */
+  async occupy(
+    ticketId: string,
+    entranceId: string,
+    spaceId: string,
+  ): Promise<ParkingSession> {
+    if (await this.isOccupied(spaceId)) {
+      throw new BadRequestException(`Space ${spaceId} is already occupied`);
+    }
+
+    return await this.parkingSessionService.start(
+      ticketId,
+      entranceId,
+      spaceId,
     );
+    /**
+     * @todo add a space.isVacant field and update to true on session start?
+     */
   }
 
   /**

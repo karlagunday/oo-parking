@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { addHours, subHours } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
@@ -7,6 +7,9 @@ import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Entrance } from 'src/entrance/entities/entrance.entity';
+import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
+import { ParkingSessionService } from 'src/parking-session/parking-session.service';
+import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { DAILY_RATE, FLAT_RATE } from 'src/utils/constants';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -21,6 +24,7 @@ describe('SpaceService', () => {
   let mockedRepository: Record<string, jest.Mock>;
   let mockedActivityLogService: Record<string, jest.Mock>;
   let mockedEntranceSpaceService: Record<string, jest.Mock>;
+  let mockedParkingSessionService: Record<string, jest.Mock>;
 
   const mockSpace = Space.construct({
     id: 'space-id',
@@ -34,23 +38,22 @@ describe('SpaceService', () => {
   const mockActivityLog = ActivityLog.construct({
     id: 'activity-log-id',
   });
-  const mockVehicle = Vehicle.construct({
-    id: 'vehicle-id',
-  });
-  const mockEntrance = Entrance.construct({
-    id: 'entrance-id',
-  });
-  const mockTicket = Ticket.construct({
-    id: 'ticket-id',
+  const mockParkingSession = ParkingSession.construct({
+    id: 'parking-session-id',
   });
 
   beforeEach(async () => {
     mockedRepository = {};
+
     mockedActivityLogService = {
       create: jest.fn().mockResolvedValue(mockActivityLog),
     };
     mockedEntranceSpaceService = {
       findAll: jest.fn(),
+    };
+    mockedParkingSessionService = {
+      findOne: jest.fn(),
+      start: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,6 +70,10 @@ describe('SpaceService', () => {
         {
           provide: EntranceSpaceService,
           useValue: mockedEntranceSpaceService,
+        },
+        {
+          provide: ParkingSessionService,
+          useValue: mockedParkingSessionService,
         },
       ],
     }).compile();
@@ -143,20 +150,100 @@ describe('SpaceService', () => {
     });
   });
 
+  describe('isVacant', () => {
+    describe('when there is an active parking session for the space', () => {
+      beforeEach(() => {
+        mockedParkingSessionService.findOne.mockResolvedValue(
+          mockParkingSession,
+        );
+      });
+
+      it('returns false', async () => {
+        expect(await service.isVacant('space-id')).toBe(false);
+        expect(mockedParkingSessionService.findOne).toHaveBeenCalledWith({
+          where: { spaceId: 'space-id', status: ParkingSessionStatus.Started },
+        });
+      });
+    });
+
+    describe('when there is no active parking session for the space', () => {
+      beforeEach(() => {
+        mockedParkingSessionService.findOne.mockResolvedValue(null);
+      });
+
+      it('returns true', async () => {
+        expect(await service.isVacant('space-id')).toBe(true);
+        expect(mockedParkingSessionService.findOne).toHaveBeenCalledWith({
+          where: { spaceId: 'space-id', status: ParkingSessionStatus.Started },
+        });
+      });
+    });
+  });
+
+  describe('isOccupied', () => {
+    let isVacantSpy: jest.SpyInstance;
+
+    describe('when the space is vacant', () => {
+      beforeEach(() => {
+        isVacantSpy = jest.spyOn(service, 'isVacant').mockResolvedValue(true);
+      });
+
+      it('returns false', async () => {
+        expect(await service.isOccupied('space-id')).toBe(false);
+        expect(isVacantSpy).toHaveBeenCalledWith('space-id');
+      });
+    });
+
+    describe('when the space is not vacant', () => {
+      beforeEach(() => {
+        isVacantSpy = jest.spyOn(service, 'isVacant').mockResolvedValue(false);
+      });
+
+      it('returns true', async () => {
+        expect(await service.isOccupied('space-id')).toBe(true);
+        expect(isVacantSpy).toHaveBeenCalledWith('space-id');
+      });
+    });
+  });
+
   describe('occupy', () => {
-    it('returns the created IN activity log', async () => {
-      expect(
-        await service.occupy(mockSpace, mockEntrance, mockVehicle, mockTicket),
-      ).toEqual(mockActivityLog);
-      expect(mockedActivityLogService.create).toHaveBeenCalledWith(
-        ActivityLog.construct({
-          entranceId: mockEntrance.id,
-          spaceId: mockSpace.id,
-          vehicleId: mockVehicle.id,
-          ticketId: mockTicket.id,
-          type: ActivityLogType.In,
-        }),
-      );
+    let isOccupiedSpy: jest.SpyInstance;
+
+    describe('when the space is already occupied', () => {
+      beforeEach(() => {
+        isOccupiedSpy = jest
+          .spyOn(service, 'isOccupied')
+          .mockResolvedValue(true);
+      });
+
+      it('returns BadRequestException', async () => {
+        await expect(
+          service.occupy('ticket-id', 'entrance-id', 'space-id'),
+        ).rejects.toThrow(BadRequestException);
+        expect(isOccupiedSpy).toHaveBeenCalledWith('space-id');
+        expect(mockedParkingSessionService.start).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('when the space is vacant', () => {
+      beforeEach(() => {
+        isOccupiedSpy = jest
+          .spyOn(service, 'isOccupied')
+          .mockResolvedValue(false);
+        mockedParkingSessionService.start.mockReturnValue(mockParkingSession);
+      });
+
+      it('returns the created session', async () => {
+        expect(
+          await service.occupy('ticket-id', 'entrance-id', 'space-id'),
+        ).toEqual(mockParkingSession);
+        expect(isOccupiedSpy).toHaveBeenCalledWith('space-id');
+        expect(mockedParkingSessionService.start).toHaveBeenCalledWith(
+          'ticket-id',
+          'entrance-id',
+          'space-id',
+        );
+      });
     });
   });
 

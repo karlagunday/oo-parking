@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  forwardRef,
   Inject,
   Injectable,
   MethodNotAllowedException,
@@ -10,6 +11,7 @@ import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { SpaceService } from 'src/space/space.service';
 import { SpaceWithDistance } from 'src/space/space.types';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
@@ -17,13 +19,13 @@ import { Repository } from 'typeorm';
 import { EntranceSpace } from '../entrance-space/entities/entrance-space.entity';
 import { AssignSpaceDto } from './dto/add-space.dto';
 import { Entrance } from './entities/entrance.entity';
-import { EntranceEntryResult } from './entrance.types';
 
 @Injectable()
 export class EntranceService extends BaseService<Entrance> {
   constructor(
     @Inject(Entrance.name)
     private entranceRepository: Repository<Entrance>,
+    @Inject(forwardRef(() => SpaceService))
     private spaceService: SpaceService,
     private entranceSpaceService: EntranceSpaceService,
     private ticketService: TicketService,
@@ -74,12 +76,9 @@ export class EntranceService extends BaseService<Entrance> {
    * issues a ticket and proceeds to park the vehicle
    * @param {string} entranceId entrace where the vehicle attempts to enter
    * @param {Vehicle} vehicle vehicle that attempts to enter
-   * @returns {Promise<EntranceEntryResult>} vehicle entry information
+   * @returns {Promise<Ticket>} parking ticket for the vehicle
    */
-  async enter(
-    entranceId: string,
-    vehicle: Vehicle,
-  ): Promise<EntranceEntryResult> {
+  async enter(entranceId: string, vehicle: Vehicle): Promise<Ticket> {
     if ((await this.count()) < 3) {
       throw new MethodNotAllowedException('Parking closed');
     }
@@ -102,19 +101,9 @@ export class EntranceService extends BaseService<Entrance> {
 
     const ticket = await this.ticketService.getTicketForVehicle(vehicle);
 
-    const activityLog = await this.spaceService.occupy(
-      spaceToPark,
-      entrance,
-      vehicle,
-      ticket,
-    );
+    await this.spaceService.occupy(ticket.id, entrance.id, spaceToPark.id);
 
-    return {
-      entrance,
-      activityLog,
-      space: spaceToPark,
-      ticket,
-    };
+    return await this.ticketService.findOneById(ticket.id);
   }
 
   /**
@@ -139,20 +128,9 @@ export class EntranceService extends BaseService<Entrance> {
   /**
    * Allows the vehicle to check out of the space and exit the entrance.
    * @param {Vehicle} vehicle vehicle to exit
-   * @returns {Promise<TicketBreakdown>} parking cost summary
+   * @returns {Promise<Ticket>} updated ticket of the exiting vehicle
    */
   async exit(vehicle: Vehicle) {
-    const { ticket, breakdown } = await this.ticketService.checkOutVehicle(
-      vehicle,
-    );
-    const activityLogs = await this.activityLogService.getAllByTicketId(
-      ticket.id,
-    );
-
-    return {
-      ticket,
-      breakdown,
-      activityLogs,
-    };
+    return await this.ticketService.checkOutVehicle(vehicle);
   }
 }

@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
+import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Repository } from 'typeorm';
 import { Vehicle } from './entities/vehicle.entity';
-import { VehicleParkingResult, VehicleUnparkingResult } from './vehicle.types';
 
 @Injectable()
 export class VehicleService extends BaseService<Vehicle> {
@@ -26,12 +26,9 @@ export class VehicleService extends BaseService<Vehicle> {
    * Parks a vehicle
    * @param {string} vehicleId id of vehicle to park
    * @param {string} entranceId id of entrance the vehicle is about to enter
-   * @returns {Promise<VehicleParkingResult>} parking result
+   * @returns {Promise<Ticket>} ticket for the parking
    */
-  async park(
-    vehicleId: string,
-    entranceId: string,
-  ): Promise<VehicleParkingResult> {
+  async park(vehicleId: string, entranceId: string): Promise<Ticket> {
     const vehicle = await this.findOneById(vehicleId);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
@@ -41,16 +38,7 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is already parked');
     }
 
-    const { entrance, space, activityLog, ticket } =
-      await this.entranceService.enter(entranceId, vehicle);
-
-    return {
-      vehicle,
-      entrance,
-      space,
-      ticket,
-      logs: [activityLog],
-    };
+    return await this.entranceService.enter(entranceId, vehicle);
   }
 
   /**
@@ -74,9 +62,9 @@ export class VehicleService extends BaseService<Vehicle> {
   /**
    * Unparks a parked vehicle
    * @param {string} vehicleId id of the vehicle to unpark
-   * @returns {Promise<VehicleUnparkingResult>} unpark result
+   * @returns {Promise<Ticket>} updated ticket of the unparked vehicle
    */
-  async unpark(vehicleId: string): Promise<VehicleUnparkingResult> {
+  async unpark(vehicleId: string): Promise<Ticket> {
     const vehicle = await this.findOneById(vehicleId);
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
@@ -86,22 +74,6 @@ export class VehicleService extends BaseService<Vehicle> {
       throw new BadRequestException('Vehicle is not parked');
     }
 
-    const { ticket, activityLogs, breakdown } = await this.entranceService.exit(
-      vehicle,
-    );
-
-    return {
-      vehicleId: vehicle.id,
-      ticketNumber: ticket.number,
-      hours: ticket.hours,
-      cost: ticket.cost,
-      logs: activityLogs.map(({ createdAt, entranceId, spaceId, type }) => ({
-        createdAt,
-        entranceId,
-        spaceId,
-        type,
-      })),
-      breakdown,
-    };
+    return await this.entranceService.exit(vehicle);
   }
 }

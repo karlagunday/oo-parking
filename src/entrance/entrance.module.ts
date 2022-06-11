@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { ActivityLogModule } from 'src/activity-log/activity-log.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { EntranceSpaceModule } from 'src/entrance-space/entrance-space.module';
+import { ParkingSessionModule } from 'src/parking-session/parking-session.module';
 import { SpaceModule } from 'src/space/space.module';
 import { TicketModule } from 'src/ticket/ticket.module';
 import { EntranceController } from './entrance.controller';
@@ -16,6 +17,7 @@ import { entranceProviders } from './providers/entrance.providers';
     forwardRef(() => EntranceSpaceModule),
     forwardRef(() => ActivityLogModule),
     forwardRef(() => TicketModule),
+    forwardRef(() => ParkingSessionModule),
   ],
   providers: [...entranceProviders, EntranceService],
   exports: [EntranceService],

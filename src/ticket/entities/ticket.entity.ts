@@ -37,12 +37,6 @@ export class Ticket extends BaseEntity {
   @JoinColumn()
   activityLogs: ActivityLog[];
 
-  @Column({ type: 'float', default: 0 })
-  cost?: number;
-
-  @Column({ type: 'float', default: 0 })
-  hours?: number;
-
   @Column({
     type: 'timestamptz',
     nullable: true,
@@ -53,4 +47,16 @@ export class Ticket extends BaseEntity {
   @OneToMany(() => ParkingSession, (parkingSession) => parkingSession.ticket)
   @JoinColumn()
   parkingSessions: ParkingSession[];
+
+  @Column({ type: 'float', default: 0 })
+  totalCost?: number;
+
+  @Column({ type: 'float', default: 0 })
+  actualHours?: number;
+
+  @Column({ type: 'float', default: 0 })
+  paidHours?: number;
+
+  @Column({ type: 'float', default: 0 })
+  remainingHours?: number;
 }

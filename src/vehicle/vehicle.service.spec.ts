@@ -1,16 +1,11 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
-import { Entrance } from 'src/entrance/entities/entrance.entity';
 import { EntranceService } from 'src/entrance/entrance.service';
-import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
-import { TicketBreakdown } from 'src/ticket/ticket.types';
 import { Vehicle } from './entities/vehicle.entity';
 import { VehicleService } from './vehicle.service';
 
@@ -27,24 +22,9 @@ describe('VehicleService', () => {
   const mockVehicle = Vehicle.construct({
     id: 'vehicle-id',
   });
-  const mockEntrance = Entrance.construct({
-    id: 'entrance-id',
-  });
-  const mockSpace = Space.construct({
-    id: 'space-id',
-  });
-  const mockActivityLog = ActivityLog.construct({
-    id: 'activity-id',
-    createdAt: new Date(),
-    entranceId: 'log-entrance-id',
-    spaceId: 'log-space-id',
-    type: ActivityLogType.Out,
-  });
   const mockTicket = Ticket.construct({
     id: 'ticket-id',
     number: 55,
-    hours: 44,
-    cost: 103,
   });
 
   beforeEach(async () => {
@@ -147,22 +127,13 @@ describe('VehicleService', () => {
           .spyOn(service, 'findOneById')
           .mockResolvedValue(mockVehicle);
         isParkedSpy = jest.spyOn(service, 'isParked').mockResolvedValue(false);
-        mockedEntranceService.enter.mockResolvedValue({
-          entrance: mockEntrance,
-          space: mockSpace,
-          activityLog: mockActivityLog,
-          ticket: mockTicket,
-        });
+        mockedEntranceService.enter.mockResolvedValue(mockTicket);
       });
 
-      it('returns the parking result', async () => {
-        expect(await service.park('vehicle-id', 'entrance-id')).toEqual({
-          vehicle: mockVehicle,
-          entrance: mockEntrance,
-          space: mockSpace,
-          ticket: mockTicket,
-          logs: [mockActivityLog],
-        });
+      it('returns the ticket of the parked vehicle', async () => {
+        expect(await service.park('vehicle-id', 'entrance-id')).toEqual(
+          mockTicket,
+        );
         expect(findOneByIdSpy).toHaveBeenCalledWith('vehicle-id');
         expect(isParkedSpy).toHaveBeenCalledWith('vehicle-id');
         expect(mockedEntranceService.enter).toHaveBeenCalledWith(
@@ -273,21 +244,6 @@ describe('VehicleService', () => {
     });
 
     describe('when the vehicle is parked', () => {
-      const breakdown: TicketBreakdown[] = [
-        {
-          spaceId: 'space-id-1',
-          entranceId: 'entrance-id-1',
-          hours: 123,
-          cost: 34,
-        },
-        {
-          spaceId: 'space-id-2',
-          entranceId: 'entrance-id-2',
-          hours: 44,
-          cost: 11,
-        },
-      ];
-
       beforeEach(() => {
         findOneByIdSpy = jest
           .spyOn(service, 'findOneById')
@@ -295,29 +251,11 @@ describe('VehicleService', () => {
         isUnparkedSpy = jest
           .spyOn(service, 'isUnparked')
           .mockResolvedValue(false);
-        mockedEntranceService.exit.mockResolvedValue({
-          ticket: mockTicket,
-          activityLogs: [mockActivityLog],
-          breakdown,
-        });
+        mockedEntranceService.exit.mockResolvedValue(mockTicket);
       });
 
-      it('returns the unpark result', async () => {
-        expect(await service.unpark('vehicle-id')).toEqual({
-          vehicleId: mockVehicle.id,
-          ticketNumber: mockTicket.number,
-          hours: mockTicket.hours,
-          cost: mockTicket.cost,
-          logs: [
-            {
-              createdAt: mockActivityLog.createdAt,
-              entranceId: mockActivityLog.entranceId,
-              spaceId: mockActivityLog.spaceId,
-              type: mockActivityLog.type,
-            },
-          ],
-          breakdown,
-        });
+      it('returns the ticket of the unparking vehicle', async () => {
+        expect(await service.unpark('vehicle-id')).toEqual(mockTicket);
 
         expect(findOneByIdSpy).toHaveBeenCalledWith('vehicle-id');
         expect(isUnparkedSpy).toHaveBeenCalledWith('vehicle-id');

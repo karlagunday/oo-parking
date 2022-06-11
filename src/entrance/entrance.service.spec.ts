@@ -60,6 +60,7 @@ describe('EntranceService', () => {
       getAllByTicketId: jest.fn(),
     };
     mockedTicketService = {
+      findOneById: jest.fn(),
       getTicketForVehicle: jest.fn(),
       checkOutVehicle: jest.fn(),
     };
@@ -243,6 +244,7 @@ describe('EntranceService', () => {
         expect(autoSelectAvailableSpaceByVehicleSizeSpy).not.toHaveBeenCalled();
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -268,6 +270,7 @@ describe('EntranceService', () => {
         expect(autoSelectAvailableSpaceByVehicleSizeSpy).not.toHaveBeenCalled();
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -295,6 +298,7 @@ describe('EntranceService', () => {
 
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -303,6 +307,9 @@ describe('EntranceService', () => {
         ...mockSpace,
         distance: 1,
       } as SpaceWithDistance;
+      const updatedTicket = Ticket.construct({
+        id: 'updated-ticket',
+      });
 
       beforeEach(() => {
         countSpy = jest.spyOn(service, 'count').mockResolvedValueOnce(3);
@@ -316,15 +323,13 @@ describe('EntranceService', () => {
           mockTicket,
         );
         mockedSpaceService.occupy.mockResolvedValueOnce(mockActivityLog);
+        mockedTicketService.findOneById.mockResolvedValue(updatedTicket);
       });
 
       it('allows the vehicle to occupy the space', async () => {
-        expect(await service.enter('entrance-id', mockVehicle)).toEqual({
-          entrance: mockEntrance,
-          activityLog: mockActivityLog,
-          space: mockSpacesWithDistance,
-          ticket: mockTicket,
-        });
+        expect(await service.enter('entrance-id', mockVehicle)).toEqual(
+          updatedTicket,
+        );
 
         expect(countSpy).toHaveBeenCalled();
         expect(findOneByIdSpy).toHaveBeenCalledWith('entrance-id');
@@ -336,10 +341,12 @@ describe('EntranceService', () => {
           mockVehicle,
         );
         expect(mockedSpaceService.occupy).toHaveBeenCalledWith(
-          mockSpacesWithDistance,
-          mockEntrance,
-          mockVehicle,
-          mockTicket,
+          mockTicket.id,
+          mockEntrance.id,
+          mockSpacesWithDistance.id,
+        );
+        expect(mockedTicketService.findOneById).toHaveBeenCalledWith(
+          mockTicket.id,
         );
       });
     });
@@ -397,30 +404,14 @@ describe('EntranceService', () => {
   });
 
   describe('exit', () => {
-    const mockBreakdown = [Symbol(`mockBreakdown`)];
-
     beforeEach(() => {
-      mockedTicketService.checkOutVehicle.mockResolvedValueOnce({
-        ticket: mockTicket,
-        breakdown: mockBreakdown,
-      });
-
-      mockedActivityLogService.getAllByTicketId.mockResolvedValueOnce([
-        mockActivityLog,
-      ]);
+      mockedTicketService.checkOutVehicle.mockResolvedValueOnce(mockTicket);
     });
 
-    it('returns the ticket, breakdown and logs', async () => {
-      expect(await service.exit(mockVehicle)).toEqual({
-        ticket: mockTicket,
-        breakdown: mockBreakdown,
-        activityLogs: [mockActivityLog],
-      });
+    it('returns the ticket of the exiting vehicle', async () => {
+      expect(await service.exit(mockVehicle)).toEqual(mockTicket);
       expect(mockedTicketService.checkOutVehicle).toHaveBeenCalledWith(
         mockVehicle,
-      );
-      expect(mockedActivityLogService.getAllByTicketId).toHaveBeenCalledWith(
-        mockTicket.id,
       );
     });
   });
