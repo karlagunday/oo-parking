@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddHoursCostsToTicketAndSession1654943451128
+export class AddHoursCostsToTicketAndSession1655042254900
   implements MigrationInterface
 {
-  name = 'AddHoursCostsToTicketAndSession1654943451128';
+  name = 'AddHoursCostsToTicketAndSession1655042254900';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "tickets" DROP COLUMN "cost"`);
@@ -24,13 +24,19 @@ export class AddHoursCostsToTicketAndSession1654943451128
       `ALTER TABLE "parking_sessions" ADD "cost" double precision NOT NULL DEFAULT '0'`,
     );
     await queryRunner.query(
-      `ALTER TABLE "parking_sessions" ADD "hours" double precision NOT NULL DEFAULT '0'`,
+      `ALTER TABLE "parking_sessions" ADD "totalHours" double precision NOT NULL DEFAULT '0'`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "parking_sessions" ADD "paidHours" double precision NOT NULL DEFAULT '0'`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "parking_sessions" DROP COLUMN "hours"`,
+      `ALTER TABLE "parking_sessions" DROP COLUMN "paidHours"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "parking_sessions" DROP COLUMN "totalHours"`,
     );
     await queryRunner.query(
       `ALTER TABLE "parking_sessions" DROP COLUMN "cost"`,

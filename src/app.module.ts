@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { SpaceModule } from './space/space.module';
-import { VehicleModule } from './vehicle/vehicle.module';
-import { EntranceModule } from './entrance/entrance.module';
 import { EntranceSpaceModule } from './entrance-space/entrance-space.module';
-import { ActivityLogModule } from './activity-log/activity-log.module';
-import { TicketModule } from './ticket/ticket.module';
+import { EntranceModule } from './entrance/entrance.module';
 import { ParkingSessionModule } from './parking-session/parking-session.module';
+import { SpaceModule } from './space/space.module';
+import { TicketModule } from './ticket/ticket.module';
+import { VehicleModule } from './vehicle/vehicle.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { ParkingSessionModule } from './parking-session/parking-session.module';
     SpaceModule,
     EntranceModule,
     EntranceSpaceModule,
-    ActivityLogModule,
     TicketModule,
     ParkingSessionModule,
   ],

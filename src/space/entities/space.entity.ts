@@ -1,5 +1,4 @@
 import { Exclude } from 'class-transformer';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
 import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
 import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
@@ -26,11 +25,6 @@ export class Space extends BaseEntity {
   @OneToMany(() => EntranceSpace, (entranceSpace) => entranceSpace.space)
   @JoinColumn()
   entranceSpaces!: EntranceSpace[];
-
-  @Exclude()
-  @OneToMany(() => ActivityLog, (activityLog) => activityLog.space)
-  @JoinColumn()
-  activityLogs!: ActivityLog[];
 
   @Exclude()
   @OneToMany(() => ParkingSession, (parkingSession) => parkingSession.space)

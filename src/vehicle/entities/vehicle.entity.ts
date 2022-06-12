@@ -1,4 +1,3 @@
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import {
@@ -6,7 +5,6 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { VehicleSize } from '../vehicle.types';
@@ -21,10 +19,6 @@ export class Vehicle extends BaseEntity {
 
   @Column({ type: 'enum', enum: VehicleSize, default: VehicleSize.Small })
   size!: VehicleSize;
-
-  @OneToMany(() => ActivityLog, (activityLog) => activityLog.vehicle)
-  @JoinColumn()
-  activityLogs: ActivityLog[];
 
   @ManyToOne(() => Ticket, (ticket) => ticket.vehicle)
   @JoinColumn()

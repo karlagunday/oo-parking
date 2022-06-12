@@ -1,6 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { EntranceService } from 'src/entrance/entrance.service';
 import { SpaceService } from 'src/space/space.service';
@@ -14,7 +13,6 @@ describe('VehicleService', () => {
 
   let mockedRepository: Record<string, jest.Mock>;
   let mockedEntranceService: Record<string, jest.Mock>;
-  let mockedActivityLogService: Record<string, jest.Mock>;
   let mockedSpaceService: Record<string, jest.Mock>;
   let mockedEntranceSpaceService: Record<string, jest.Mock>;
   let mockedTicketService: Record<string, jest.Mock>;
@@ -35,7 +33,6 @@ describe('VehicleService', () => {
       enter: jest.fn(),
       exit: jest.fn(),
     };
-    mockedActivityLogService = {};
     mockedSpaceService = {};
     mockedEntranceSpaceService = {};
     mockedTicketService = {
@@ -52,10 +49,6 @@ describe('VehicleService', () => {
         {
           provide: EntranceService,
           useValue: mockedEntranceService,
-        },
-        {
-          provide: ActivityLogService,
-          useValue: mockedActivityLogService,
         },
         {
           provide: SpaceService,

@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { subHours, subMinutes } from 'date-fns';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { SpaceService } from 'src/space/space.service';
@@ -15,7 +14,6 @@ describe('TicketService', () => {
   let service: TicketService;
   let mockedRepository: Record<string, jest.Mock>;
 
-  let mockedActivityLogService: Record<string, jest.Mock>;
   let mockedSpaceService: Record<string, jest.Mock>;
   let mockedParkingSessionService: Record<string, jest.Mock>;
 
@@ -43,11 +41,6 @@ describe('TicketService', () => {
       update: jest.fn(),
     };
 
-    mockedActivityLogService = {
-      calculateParkedHoursByTicketId: jest.fn(),
-      create: jest.fn(),
-      getLastActivityByVehicleId: jest.fn(),
-    };
     mockedSpaceService = {
       calculateCost: jest.fn(),
     };
@@ -61,10 +54,6 @@ describe('TicketService', () => {
         {
           provide: Ticket.name,
           useValue: mockedRepository,
-        },
-        {
-          provide: ActivityLogService,
-          useValue: mockedActivityLogService,
         },
         {
           provide: SpaceService,

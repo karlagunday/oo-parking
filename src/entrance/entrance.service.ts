@@ -6,9 +6,9 @@ import {
   MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
+import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
 import { SpaceWithDistance } from 'src/space/space.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
@@ -29,7 +29,6 @@ export class EntranceService extends BaseService<Entrance> {
     private spaceService: SpaceService,
     private entranceSpaceService: EntranceSpaceService,
     private ticketService: TicketService,
-    private activityLogService: ActivityLogService,
   ) {
     super(entranceRepository);
   }
@@ -110,19 +109,27 @@ export class EntranceService extends BaseService<Entrance> {
    * Automatically selects an available parking space of an entrance for a vehicle of size
    * @param {Entrance} entrance entrance to check for spaces
    * @param {VehicleSize} vehicleSize size of the vehicle to select a space for
-   * @returns {Promise<SpaceWithDistance | null>} selected entrance space for the vehicle size, or undefined when no space is available
+   * @returns {Promise<Space | null>} selected entrance space for the vehicle size, or undefined when no space is available
    */
   async autoSelectAvailableSpaceByVehicleSize(
     entrance: Entrance,
     vehicleSize: VehicleSize,
-  ): Promise<SpaceWithDistance | undefined> {
+  ): Promise<Space | undefined> {
     const availableSpaces =
       await this.spaceService.getAvailableEntranceSpacesForVehicleSize(
         entrance.id,
         vehicleSize,
       );
 
-    return availableSpaces.sort((a, b) => b.distance - a.distance).pop();
+    /**
+     * Spaces will only have one entrance space at this point
+     * as they are filtered by entrance id
+     */
+    return availableSpaces
+      .sort(
+        (a, b) => b.entranceSpaces[0].distance - a.entranceSpaces[0].distance,
+      )
+      .pop();
   }
 
   /**

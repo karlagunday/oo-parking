@@ -5,7 +5,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { differenceInMinutes } from 'date-fns';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { BaseService } from 'src/base/base.service';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { SpaceService } from 'src/space/space.service';
@@ -20,7 +19,6 @@ export class TicketService extends BaseService<Ticket> {
   constructor(
     @Inject(Ticket.name)
     private ticketRepository: Repository<Ticket>,
-    private activityLogService: ActivityLogService,
     @Inject(forwardRef(() => SpaceService))
     private spaceService: SpaceService,
     @Inject(forwardRef(() => ParkingSessionService))
