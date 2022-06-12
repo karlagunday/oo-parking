@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { differenceInHours } from 'date-fns';
+import { differenceInHours, differenceInSeconds } from 'date-fns';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
 import { SpaceService } from 'src/space/space.service';
@@ -121,6 +121,13 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
     return await this.findOneById(parkingSession.id);
   }
 
+  /**
+   * Calculates the cost of ticket's current session
+   * @param {Ticket} ticket ticket to calculate the cost for
+   * @param {Date} sessionEndTime assumed datetime of when the session will end
+   * @returns
+   * @todo add return type
+   */
   async calculateActiveSessionCostOfTicket(
     ticket: Ticket,
     sessionEndTime: Date,
@@ -136,13 +143,15 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
     }
 
     let cost = 0;
-    // number of hours the current session is being charged
-    let hoursBeingPaid = 0;
 
-    const totalHours = differenceInHours(
-      sessionEndTime,
-      parkingSession.startedAt,
-    );
+    /**
+     * Get difference in seconds, manually convert to hours
+     * then round to 4 decimal places
+     * @todo move rounding to `utils`
+     */
+    const difference =
+      differenceInSeconds(sessionEndTime, parkingSession.startedAt) / 60 / 60;
+    const totalHours = Math.round((difference + Number.EPSILON) * 1000) / 1000;
 
     /**
      * Session will not be charged if the ticket's remaining hours
@@ -151,14 +160,16 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
     if (ticket.remainingHours >= totalHours) {
       return {
         cost,
-        hours: totalHours,
-        paidHours: totalHours,
+        totalHours,
+        // even if the cost is 0, it is still paying for the total hours of the session
+        hoursBeingPaid: totalHours,
         parkingSession,
       };
     }
 
-    const roundedTotalHours = ticket.actualHours + totalHours;
+    const roundedTotalHours = Math.ceil(ticket.actualHours + totalHours);
     const spaceHourlyRate = hourlyRate[parkingSession.space.size];
+    const unpaidHours = totalHours - ticket.remainingHours;
 
     /**
      * @todo simplify even further?
@@ -169,12 +180,7 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
         days * DAILY_RATE +
         (roundedTotalHours - days * 24) * spaceHourlyRate -
         ticket.totalCost;
-
-      // if the daily rate applies, the session will be charged for the additional hours,
-      // regardless if there is still remaining hours
-      hoursBeingPaid = totalHours;
     } else {
-      const unpaidHours = totalHours - ticket.remainingHours;
       const roundedUnpaidHours = Math.ceil(unpaidHours);
 
       if (ticket.paidHours >= FLAT_RATE_HOURS) {
@@ -186,15 +192,11 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
             : 0;
         cost = excess * spaceHourlyRate + FLAT_RATE;
       }
-
-      // if daily rates don't apply, the session will be charged for the hours
-      // beyond the ticket's remaining hours
-      hoursBeingPaid = unpaidHours;
     }
 
     return {
       cost,
-      hoursBeingPaid,
+      hoursBeingPaid: unpaidHours,
       totalHours,
       parkingSession,
     };

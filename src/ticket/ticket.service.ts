@@ -109,7 +109,7 @@ export class TicketService extends BaseService<Ticket> {
 
     // update the ticket to reflect the recently-stopped parking session
     const updatedTotalCost = ticket.totalCost + endedSession.cost;
-    const updatedActualHours = ticket.actualHours + endedSession.paidHours;
+    const updatedActualHours = ticket.actualHours + endedSession.totalHours;
     const updatedPaidHours =
       ticket.paidHours + Math.ceil(endedSession.paidHours);
     const updatedRemainingHours = updatedPaidHours - updatedActualHours;

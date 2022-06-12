@@ -2,14 +2,9 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { subHours, subMinutes } from 'date-fns';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import {
-  ActivityLogTotalHours,
-  ActivityLogType,
-} from 'src/activity-log/activity-log.types';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
+import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { SpaceService } from 'src/space/space.service';
-import { SpaceCalculationResult } from 'src/space/space.types';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { IsNull, Not } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
@@ -22,12 +17,23 @@ describe('TicketService', () => {
 
   let mockedActivityLogService: Record<string, jest.Mock>;
   let mockedSpaceService: Record<string, jest.Mock>;
+  let mockedParkingSessionService: Record<string, jest.Mock>;
 
   const mockTicket = Ticket.construct({
     id: 'ticket-id',
+    totalCost: 80,
+    actualHours: 6.6,
+    paidHours: 7,
+    remainingHours: 0.4,
   });
   const mockVehicle = Vehicle.construct({
     id: 'vehicle-id',
+  });
+  const mockParkingSession = ParkingSession.construct({
+    id: 'session-id',
+    cost: 20,
+    totalHours: 2,
+    paidHours: 1.6,
   });
 
   beforeEach(async () => {
@@ -44,6 +50,9 @@ describe('TicketService', () => {
     };
     mockedSpaceService = {
       calculateCost: jest.fn(),
+    };
+    mockedParkingSessionService = {
+      stop: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -63,7 +72,7 @@ describe('TicketService', () => {
         },
         {
           provide: ParkingSessionService,
-          useValue: {},
+          useValue: mockedParkingSessionService,
         },
       ],
     }).compile();
@@ -243,133 +252,61 @@ describe('TicketService', () => {
     let updateSpy: jest.SpyInstance;
     let findOneByIdSpy: jest.SpyInstance;
 
-    const inActivity = ActivityLog.construct({
-      id: 'in-activity-id',
-      entranceId: 'in-entrance-id',
-      spaceId: 'in-space-id',
-      type: ActivityLogType.In,
-    });
-    const outActivity = ActivityLog.construct({
-      id: 'out-activity-id',
-      entranceId: 'out-entrance-id',
-      spaceId: 'out-space-id',
-      type: ActivityLogType.Out,
-      createdAt: new Date(),
-    });
-    const updatedTicket = Ticket.construct({
-      id: 'updated-ticket',
-    });
-
-    describe('when the vehicle is not currently parked', () => {
+    describe('when there is no active ticket for the vehicle', () => {
       beforeEach(() => {
         getActiveTicketByVehicleIdSpy = jest
           .spyOn(service, 'getActiveTicketByVehicleId')
-          .mockResolvedValue(mockTicket);
-        mockedActivityLogService.getLastActivityByVehicleId.mockResolvedValue(
-          outActivity,
-        );
+          .mockResolvedValue(null);
         updateSpy = jest.spyOn(service, 'update');
         findOneByIdSpy = jest.spyOn(service, 'findOneById');
       });
 
-      it('throwns a BadRequestException', async () => {
+      it('throws BadRequestException', async () => {
         await expect(service.checkOutVehicle(mockVehicle)).rejects.toThrow(
           BadRequestException,
         );
         expect(getActiveTicketByVehicleIdSpy).toHaveBeenCalledWith(
           mockVehicle.id,
         );
-        expect(
-          mockedActivityLogService.getLastActivityByVehicleId,
-        ).toHaveBeenCalledWith(mockVehicle.id);
 
-        expect(mockedActivityLogService.create).not.toHaveBeenCalled();
-        expect(
-          mockedActivityLogService.calculateParkedHoursByTicketId,
-        ).not.toHaveBeenCalled();
-        expect(mockedSpaceService.calculateCost).not.toHaveBeenCalled();
+        expect(mockedParkingSessionService.stop).not.toHaveBeenCalled();
         expect(updateSpy).not.toHaveBeenCalled();
         expect(findOneByIdSpy).not.toHaveBeenCalled();
       });
     });
 
-    describe('when the vehicle is parked', () => {
-      const logHours: ActivityLogTotalHours[] = [
-        {
-          entranceId: 'entrance-id-1',
-          spaceId: 'space-id-1',
-          hours: 5,
-        },
-        {
-          entranceId: 'entrance-id-1',
-          spaceId: 'space-id-2',
-          hours: 27,
-        },
-      ];
-      const spaceCalculations: SpaceCalculationResult[] = [
-        {
-          spaceId: 'space-id-1',
-          entranceId: 'entrance-id-1',
-          hours: 5,
-          cost: 1000,
-        },
-        {
-          spaceId: 'space-id-1',
-          entranceId: 'entrance-id-2',
-          hours: 27,
-          cost: 100,
-        },
-      ];
+    describe('when there is an active ticket for the vehicle', () => {
+      const updatedTicket = Ticket.construct({
+        id: 'updated-ticket',
+      });
 
       beforeEach(() => {
         getActiveTicketByVehicleIdSpy = jest
           .spyOn(service, 'getActiveTicketByVehicleId')
           .mockResolvedValue(mockTicket);
-        mockedActivityLogService.getLastActivityByVehicleId.mockResolvedValue(
-          inActivity,
-        );
-        mockedActivityLogService.create.mockResolvedValue(outActivity);
-        mockedActivityLogService.calculateParkedHoursByTicketId.mockResolvedValue(
-          logHours,
-        );
-        mockedSpaceService.calculateCost.mockResolvedValue(spaceCalculations);
+        mockedParkingSessionService.stop.mockResolvedValue(mockParkingSession);
         updateSpy = jest.spyOn(service, 'update');
         findOneByIdSpy = jest
           .spyOn(service, 'findOneById')
           .mockResolvedValue(updatedTicket);
       });
 
-      it('checks out the vehicle', async () => {
-        expect(await service.checkOutVehicle(mockVehicle)).toEqual({
-          ticket: updatedTicket,
-          breakdown: spaceCalculations,
-        });
+      it('stops the active session, calculates the cost and returns the updated ticket', async () => {
+        expect(await service.checkOutVehicle(mockVehicle)).toEqual(
+          updatedTicket,
+        );
         expect(getActiveTicketByVehicleIdSpy).toHaveBeenCalledWith(
           mockVehicle.id,
         );
-        expect(
-          mockedActivityLogService.getLastActivityByVehicleId,
-        ).toHaveBeenCalledWith(mockVehicle.id);
-        expect(mockedActivityLogService.create).toHaveBeenCalledWith(
-          ActivityLog.construct({
-            entranceId: inActivity.entranceId,
-            spaceId: inActivity.spaceId,
-            vehicleId: mockVehicle.id,
-            ticketId: mockTicket.id,
-            type: ActivityLogType.Out,
-          }),
+        expect(mockedParkingSessionService.stop).toHaveBeenCalledWith(
+          mockTicket,
         );
-        expect(
-          mockedActivityLogService.calculateParkedHoursByTicketId,
-        ).toHaveBeenCalledWith(mockTicket.id);
-        expect(mockedSpaceService.calculateCost).toHaveBeenCalledWith(logHours);
         expect(updateSpy).toHaveBeenCalledWith(mockTicket.id, {
-          status: TicketStatus.Completed,
-          cost: 1100,
-          hours: 32,
-          completedAt: outActivity.createdAt,
+          totalCost: 100,
+          actualHours: 8.6,
+          paidHours: 9,
+          remainingHours: 9 - 8.6,
         });
-        expect(findOneByIdSpy).toHaveBeenCalledWith(mockTicket.id);
       });
     });
   });
