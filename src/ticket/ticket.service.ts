@@ -108,8 +108,7 @@ export class TicketService extends BaseService<Ticket> {
     // update the ticket to reflect the recently-stopped parking session
     const updatedTotalCost = ticket.totalCost + endedSession.cost;
     const updatedActualHours = ticket.actualHours + endedSession.totalHours;
-    const updatedPaidHours =
-      ticket.paidHours + Math.ceil(endedSession.paidHours);
+    const updatedPaidHours = Math.ceil(updatedActualHours);
     const updatedRemainingHours = updatedPaidHours - updatedActualHours;
 
     await this.update(ticket.id, {
@@ -117,8 +116,12 @@ export class TicketService extends BaseService<Ticket> {
       actualHours: updatedActualHours,
       paidHours: updatedPaidHours,
       remainingHours: updatedRemainingHours,
+      completedAt: endedSession.endedAt,
+      status: TicketStatus.Completed,
     });
 
-    return await this.findOneById(ticket.id);
+    return await this.findOneById(ticket.id, {
+      relations: ['parkingSessions'],
+    });
   }
 }

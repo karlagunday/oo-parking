@@ -248,6 +248,8 @@ describe('ParkingSessionService', () => {
         expect(createSpy).toHaveBeenCalledWith(
           ParkingSession.construct({
             ticketId: 'ticket-id',
+            entranceId: 'entrance-id',
+            spaceId: 'space-id',
             status: ParkingSessionStatus.Started,
           }),
         );

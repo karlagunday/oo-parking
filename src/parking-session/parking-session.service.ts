@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { differenceInHours, differenceInSeconds } from 'date-fns';
+import { differenceInSeconds } from 'date-fns';
 import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
 import { SpaceService } from 'src/space/space.service';
@@ -95,6 +95,8 @@ export class ParkingSessionService extends BaseService<ParkingSession> {
     return await this.create(
       ParkingSession.construct({
         ticketId,
+        entranceId,
+        spaceId,
         status: ParkingSessionStatus.Started,
       }),
     );

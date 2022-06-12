@@ -333,6 +333,7 @@ describe('EntranceService', () => {
         );
         expect(mockedTicketService.findOneById).toHaveBeenCalledWith(
           mockTicket.id,
+          { relations: ['parkingSessions'] },
         );
       });
     });

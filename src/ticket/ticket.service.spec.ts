@@ -32,6 +32,7 @@ describe('TicketService', () => {
     cost: 20,
     totalHours: 2,
     paidHours: 1.6,
+    endedAt: new Date(),
   });
 
   beforeEach(async () => {
@@ -295,6 +296,11 @@ describe('TicketService', () => {
           actualHours: 8.6,
           paidHours: 9,
           remainingHours: 9 - 8.6,
+          completedAt: mockParkingSession.endedAt,
+          status: TicketStatus.Completed,
+        });
+        expect(findOneByIdSpy).toHaveBeenCalledWith(mockTicket.id, {
+          relations: ['parkingSessions'],
         });
       });
     });

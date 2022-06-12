@@ -102,7 +102,9 @@ export class EntranceService extends BaseService<Entrance> {
 
     await this.spaceService.occupy(ticket.id, entrance.id, spaceToPark.id);
 
-    return await this.ticketService.findOneById(ticket.id);
+    return await this.ticketService.findOneById(ticket.id, {
+      relations: ['parkingSessions'],
+    });
   }
 
   /**
