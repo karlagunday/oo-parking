@@ -8,7 +8,7 @@ import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
-import { SpaceSize, SpaceWithDistance } from 'src/space/space.types';
+import { SpaceSize } from 'src/space/space.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -290,10 +290,6 @@ describe('EntranceService', () => {
     });
 
     describe('when there is an available space to park', () => {
-      const mockSpacesWithDistance = {
-        ...mockSpace,
-        distance: 1,
-      } as SpaceWithDistance;
       const updatedTicket = Ticket.construct({
         id: 'updated-ticket',
       });
@@ -305,7 +301,7 @@ describe('EntranceService', () => {
           .mockResolvedValueOnce(mockEntrance);
         autoSelectAvailableSpaceByVehicleSizeSpy = jest
           .spyOn(service, 'autoSelectAvailableSpaceByVehicleSize')
-          .mockResolvedValueOnce(mockSpacesWithDistance);
+          .mockResolvedValueOnce(mockSpace);
         mockedTicketService.getTicketForVehicle.mockResolvedValueOnce(
           mockTicket,
         );
@@ -329,7 +325,7 @@ describe('EntranceService', () => {
         expect(mockedSpaceService.occupy).toHaveBeenCalledWith(
           mockTicket.id,
           mockEntrance.id,
-          mockSpacesWithDistance.id,
+          mockSpace.id,
         );
         expect(mockedTicketService.findOneById).toHaveBeenCalledWith(
           mockTicket.id,

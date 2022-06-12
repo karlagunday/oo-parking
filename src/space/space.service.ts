@@ -5,21 +5,19 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { BaseService } from 'src/base/base.service';
-import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
 import { Repository } from 'typeorm';
 import { Space } from './entities/space.entity';
-import { SpaceSize, SpaceWithDistance } from './space.types';
+import { SpaceSize } from './space.types';
 
 @Injectable()
 export class SpaceService extends BaseService<Space> {
   constructor(
     @Inject(Space.name)
     private spaceRepository: Repository<Space>,
-    private entranceSpacesService: EntranceSpaceService,
     @Inject(forwardRef(() => ParkingSessionService))
     private parkingSessionService: ParkingSessionService,
   ) {
@@ -29,24 +27,17 @@ export class SpaceService extends BaseService<Space> {
   /**
    * Retrieves all spaces assigned to the entrance of id
    * @param {string} entranceId id of entrance to retrieve the spaces for
-   * @returns {Promise<SpaceWithDistance[]>} resulting space with its distance from the entrance
+   * @returns {Promise<Space[]>} resulting space
    */
-  async findAllByEntranceId(entranceId: string): Promise<SpaceWithDistance[]> {
-    return (
-      await this.entranceSpacesService.findAll({
-        where: { entranceId },
-        relations: ['space'],
-      })
-    ).map(
-      ({ space, distance }) =>
-        ({
-          /**
-           * @todo remove timestamps not being intercepted by the interceptor
-           */
-          ...space,
-          distance,
-        } as SpaceWithDistance),
-    );
+  async findAllByEntranceId(entranceId: string): Promise<Space[]> {
+    return this.findAll({
+      relations: ['entranceSpaces'],
+      where: {
+        entranceSpaces: {
+          entranceId,
+        },
+      },
+    });
   }
 
   /**
@@ -58,7 +49,7 @@ export class SpaceService extends BaseService<Space> {
   isVehicleSizeOnSpaceSizeParkAllowed(
     vehicleSize: VehicleSize,
     spaceSize: SpaceSize,
-  ) {
+  ): boolean {
     return vehicleSize <= spaceSize;
   }
 
@@ -67,7 +58,7 @@ export class SpaceService extends BaseService<Space> {
    * @param {string} id space to check
    * @returns {Promise<boolean>} true if vacant, false otherwise
    */
-  async isVacant(id: string) {
+  async isVacant(id: string): Promise<boolean> {
     return !(await this.parkingSessionService.findOne({
       where: { spaceId: id, status: ParkingSessionStatus.Started },
     }));
@@ -78,7 +69,7 @@ export class SpaceService extends BaseService<Space> {
    * @param {string} id space to check
    * @returns {Promise<boolean>} true if occupied, false otherwise
    */
-  async isOccupied(id: string) {
+  async isOccupied(id: string): Promise<boolean> {
     return !(await this.isVacant(id));
   }
 
@@ -87,7 +78,7 @@ export class SpaceService extends BaseService<Space> {
    * @param {string} ticketId ticket of the session
    * @param {string} entranceId entrance where the occupant came from
    * @param {string} spaceId space to occupy
-   * @returns {Promise<ParkingSession} resulting parking session
+   * @returns {Promise<ParkingSession>} resulting parking session
    */
   async occupy(
     ticketId: string,

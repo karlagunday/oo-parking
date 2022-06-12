@@ -1,7 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
-import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
@@ -14,18 +12,11 @@ describe('SpaceService', () => {
   let service: SpaceService;
 
   let mockedRepository: Record<string, jest.Mock>;
-
-  let mockedEntranceSpaceService: Record<string, jest.Mock>;
   let mockedParkingSessionService: Record<string, jest.Mock>;
 
   const mockSpace = Space.construct({
     id: 'space-id',
     size: SpaceSize.Small,
-  });
-  const mockEntranceSpace = EntranceSpace.construct({
-    id: 'entrance-space-id',
-    distance: 10,
-    space: mockSpace,
   });
 
   const mockParkingSession = ParkingSession.construct({
@@ -35,9 +26,6 @@ describe('SpaceService', () => {
   beforeEach(async () => {
     mockedRepository = {};
 
-    mockedEntranceSpaceService = {
-      findAll: jest.fn(),
-    };
     mockedParkingSessionService = {
       findOne: jest.fn(),
       start: jest.fn(),
@@ -49,10 +37,6 @@ describe('SpaceService', () => {
         {
           provide: Space.name,
           useValue: mockedRepository,
-        },
-        {
-          provide: EntranceSpaceService,
-          useValue: mockedEntranceSpaceService,
         },
         {
           provide: ParkingSessionService,
@@ -69,34 +53,37 @@ describe('SpaceService', () => {
   });
 
   describe('findAllByEntranceId', () => {
+    let findAllSpy: jest.SpyInstance;
+
     describe('when there are no spaces assigned to the entrance', () => {
       beforeEach(() => {
-        mockedEntranceSpaceService.findAll.mockResolvedValue([]);
+        findAllSpy = jest.spyOn(service, 'findAll').mockResolvedValue([]);
       });
 
       it('returns an empty array', async () => {
         expect(await service.findAllByEntranceId('entrance-id')).toEqual([]);
-        expect(mockedEntranceSpaceService.findAll).toHaveBeenCalledWith({
-          where: { entranceId: 'entrance-id' },
-          relations: ['space'],
+        expect(findAllSpy).toHaveBeenCalledWith({
+          relations: ['entranceSpaces'],
+          where: { entranceSpaces: { entranceId: 'entrance-id' } },
         });
       });
     });
 
     describe('when there are assigned spaces', () => {
       beforeEach(() => {
-        mockedEntranceSpaceService.findAll.mockResolvedValue([
-          mockEntranceSpace,
-        ]);
+        findAllSpy = jest
+          .spyOn(service, 'findAll')
+          .mockResolvedValue([mockSpace]);
       });
 
       it('returns the resulting spaces with distances', async () => {
         expect(await service.findAllByEntranceId('entrance-id')).toEqual([
-          {
-            ...mockSpace,
-            distance: mockEntranceSpace.distance,
-          },
+          mockSpace,
         ]);
+        expect(findAllSpy).toHaveBeenCalledWith({
+          relations: ['entranceSpaces'],
+          where: { entranceSpaces: { entranceId: 'entrance-id' } },
+        });
       });
     });
   });

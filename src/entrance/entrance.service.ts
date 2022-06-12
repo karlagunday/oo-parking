@@ -10,7 +10,6 @@ import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
-import { SpaceWithDistance } from 'src/space/space.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -111,7 +110,7 @@ export class EntranceService extends BaseService<Entrance> {
    * Automatically selects an available parking space of an entrance for a vehicle of size
    * @param {Entrance} entrance entrance to check for spaces
    * @param {VehicleSize} vehicleSize size of the vehicle to select a space for
-   * @returns {Promise<Space | null>} selected entrance space for the vehicle size, or undefined when no space is available
+   * @returns {Promise<Space | undefined>} selected entrance space for the vehicle size, or undefined when no space is available
    */
   async autoSelectAvailableSpaceByVehicleSize(
     entrance: Entrance,
@@ -122,7 +121,7 @@ export class EntranceService extends BaseService<Entrance> {
         entrance.id,
         vehicleSize,
       );
-    console.log({ availableSpaces });
+
     /**
      * Spaces will only have one entrance space at this point
      * as they are filtered by entrance id
@@ -142,7 +141,7 @@ export class EntranceService extends BaseService<Entrance> {
    * @param {Vehicle} vehicle vehicle to exit
    * @returns {Promise<Ticket>} updated ticket of the exiting vehicle
    */
-  async exit(vehicle: Vehicle) {
+  async exit(vehicle: Vehicle): Promise<Ticket> {
     return await this.ticketService.checkOutVehicle(vehicle);
   }
 }
