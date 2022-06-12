@@ -8,7 +8,7 @@ import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
-import { SpaceWithDistance } from 'src/space/space.types';
+import { SpaceSize, SpaceWithDistance } from 'src/space/space.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -364,6 +364,7 @@ describe('EntranceService', () => {
       const spaces: Space[] = [
         Space.construct({
           id: 'space-1',
+          size: SpaceSize.Small,
           entranceSpaces: [
             EntranceSpace.construct({
               id: 'entrance-space-1',
@@ -373,6 +374,7 @@ describe('EntranceService', () => {
         }),
         Space.construct({
           id: 'space-2',
+          size: SpaceSize.Medium,
           entranceSpaces: [
             EntranceSpace.construct({
               id: 'entrance-space-2',
@@ -382,6 +384,7 @@ describe('EntranceService', () => {
         }),
         Space.construct({
           id: 'space-3',
+          size: SpaceSize.Large,
           entranceSpaces: [
             EntranceSpace.construct({
               id: 'entrance-space-3',
@@ -392,7 +395,7 @@ describe('EntranceService', () => {
       ];
 
       beforeEach(() => {
-        mockedSpaceService.getAvailableEntranceSpacesForVehicleSize.mockResolvedValueOnce(
+        mockedSpaceService.getAvailableEntranceSpacesForVehicleSize.mockResolvedValue(
           spaces,
         );
       });
@@ -411,6 +414,44 @@ describe('EntranceService', () => {
         expect(
           mockedSpaceService.getAvailableEntranceSpacesForVehicleSize,
         ).toHaveBeenCalledWith('entrance-id', VehicleSize.Small);
+      });
+
+      describe('when the available spaces are of same distances', () => {
+        const sameAvailableDistanceSpaces: Space[] = [
+          ...spaces,
+          Space.construct({
+            id: 'space-4',
+            size: SpaceSize.Small,
+            entranceSpaces: [
+              EntranceSpace.construct({
+                id: 'entrance-space-4',
+                distance: 3,
+              }),
+            ],
+          }),
+        ];
+
+        beforeEach(() => {
+          mockedSpaceService.getAvailableEntranceSpacesForVehicleSize.mockResolvedValue(
+            sameAvailableDistanceSpaces,
+          );
+        });
+
+        it('returns the smallest space', async () => {
+          expect(
+            await service.autoSelectAvailableSpaceByVehicleSize(
+              mockEntrance,
+              VehicleSize.Small,
+            ),
+          ).toEqual(
+            expect.objectContaining({
+              id: 'space-4',
+            }),
+          );
+          expect(
+            mockedSpaceService.getAvailableEntranceSpacesForVehicleSize,
+          ).toHaveBeenCalledWith('entrance-id', VehicleSize.Small);
+        });
       });
     });
   });

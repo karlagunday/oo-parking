@@ -122,14 +122,17 @@ export class EntranceService extends BaseService<Entrance> {
         entrance.id,
         vehicleSize,
       );
-
+    console.log({ availableSpaces });
     /**
      * Spaces will only have one entrance space at this point
      * as they are filtered by entrance id
      */
-    return availableSpaces
+    return [...availableSpaces]
       .sort(
-        (a, b) => b.entranceSpaces[0].distance - a.entranceSpaces[0].distance,
+        (a, b) =>
+          b.entranceSpaces[0].distance - a.entranceSpaces[0].distance ||
+          // in case they have the same distance, further sort it by size
+          b.size - a.size,
       )
       .pop();
   }
