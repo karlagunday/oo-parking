@@ -4,8 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { EntranceSpace } from 'src/entrance-space/entities/entrance-space.entity';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
@@ -24,7 +22,6 @@ describe('EntranceService', () => {
 
   let mockedSpaceService: Record<string, jest.Mock>;
   let mockedEntranceSpaceService: Record<string, jest.Mock>;
-  let mockedActivityLogService: Record<string, jest.Mock>;
   let mockedTicketService: Record<string, jest.Mock>;
 
   const mockEntrance = Entrance.construct({
@@ -40,9 +37,6 @@ describe('EntranceService', () => {
   const mockTicket = Ticket.construct({
     id: 'ticket-id',
   });
-  const mockActivityLog = ActivityLog.construct({
-    id: 'activity-id',
-  });
 
   beforeEach(async () => {
     mockedRepository = {};
@@ -56,10 +50,8 @@ describe('EntranceService', () => {
     mockedEntranceSpaceService = {
       create: jest.fn(),
     };
-    mockedActivityLogService = {
-      getAllByTicketId: jest.fn(),
-    };
     mockedTicketService = {
+      findOneById: jest.fn(),
       getTicketForVehicle: jest.fn(),
       checkOutVehicle: jest.fn(),
     };
@@ -78,10 +70,6 @@ describe('EntranceService', () => {
         {
           provide: EntranceSpaceService,
           useValue: mockedEntranceSpaceService,
-        },
-        {
-          provide: ActivityLogService,
-          useValue: mockedActivityLogService,
         },
         {
           provide: TicketService,
@@ -243,6 +231,7 @@ describe('EntranceService', () => {
         expect(autoSelectAvailableSpaceByVehicleSizeSpy).not.toHaveBeenCalled();
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -268,6 +257,7 @@ describe('EntranceService', () => {
         expect(autoSelectAvailableSpaceByVehicleSizeSpy).not.toHaveBeenCalled();
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -295,6 +285,7 @@ describe('EntranceService', () => {
 
         expect(mockedTicketService.getTicketForVehicle).not.toHaveBeenCalled();
         expect(mockedSpaceService.occupy).not.toHaveBeenCalled();
+        expect(mockedTicketService.findOneById).not.toHaveBeenCalled();
       });
     });
 
@@ -303,6 +294,9 @@ describe('EntranceService', () => {
         ...mockSpace,
         distance: 1,
       } as SpaceWithDistance;
+      const updatedTicket = Ticket.construct({
+        id: 'updated-ticket',
+      });
 
       beforeEach(() => {
         countSpy = jest.spyOn(service, 'count').mockResolvedValueOnce(3);
@@ -315,16 +309,13 @@ describe('EntranceService', () => {
         mockedTicketService.getTicketForVehicle.mockResolvedValueOnce(
           mockTicket,
         );
-        mockedSpaceService.occupy.mockResolvedValueOnce(mockActivityLog);
+        mockedTicketService.findOneById.mockResolvedValue(updatedTicket);
       });
 
       it('allows the vehicle to occupy the space', async () => {
-        expect(await service.enter('entrance-id', mockVehicle)).toEqual({
-          entrance: mockEntrance,
-          activityLog: mockActivityLog,
-          space: mockSpacesWithDistance,
-          ticket: mockTicket,
-        });
+        expect(await service.enter('entrance-id', mockVehicle)).toEqual(
+          updatedTicket,
+        );
 
         expect(countSpy).toHaveBeenCalled();
         expect(findOneByIdSpy).toHaveBeenCalledWith('entrance-id');
@@ -336,10 +327,12 @@ describe('EntranceService', () => {
           mockVehicle,
         );
         expect(mockedSpaceService.occupy).toHaveBeenCalledWith(
-          mockSpacesWithDistance,
-          mockEntrance,
-          mockVehicle,
-          mockTicket,
+          mockTicket.id,
+          mockEntrance.id,
+          mockSpacesWithDistance.id,
+        );
+        expect(mockedTicketService.findOneById).toHaveBeenCalledWith(
+          mockTicket.id,
         );
       });
     });
@@ -367,15 +360,39 @@ describe('EntranceService', () => {
     });
 
     describe('when there are available spaces', () => {
-      const mockSpacesWithDistance: Partial<SpaceWithDistance>[] = [
-        { id: 'space-id-1', distance: 10 },
-        { id: 'space-id-2', distance: 1 },
-        { id: 'space-id-3', distance: 5 },
+      const spaces: Space[] = [
+        Space.construct({
+          id: 'space-1',
+          entranceSpaces: [
+            EntranceSpace.construct({
+              id: 'entrance-space-1',
+              distance: 20,
+            }),
+          ],
+        }),
+        Space.construct({
+          id: 'space-2',
+          entranceSpaces: [
+            EntranceSpace.construct({
+              id: 'entrance-space-2',
+              distance: 3,
+            }),
+          ],
+        }),
+        Space.construct({
+          id: 'space-3',
+          entranceSpaces: [
+            EntranceSpace.construct({
+              id: 'entrance-space-3',
+              distance: 4,
+            }),
+          ],
+        }),
       ];
 
       beforeEach(() => {
         mockedSpaceService.getAvailableEntranceSpacesForVehicleSize.mockResolvedValueOnce(
-          mockSpacesWithDistance,
+          spaces,
         );
       });
 
@@ -385,10 +402,11 @@ describe('EntranceService', () => {
             mockEntrance,
             VehicleSize.Small,
           ),
-        ).toEqual({
-          id: 'space-id-2',
-          distance: 1,
-        });
+        ).toEqual(
+          expect.objectContaining({
+            id: 'space-2',
+          }),
+        );
         expect(
           mockedSpaceService.getAvailableEntranceSpacesForVehicleSize,
         ).toHaveBeenCalledWith('entrance-id', VehicleSize.Small);
@@ -397,30 +415,14 @@ describe('EntranceService', () => {
   });
 
   describe('exit', () => {
-    const mockBreakdown = [Symbol(`mockBreakdown`)];
-
     beforeEach(() => {
-      mockedTicketService.checkOutVehicle.mockResolvedValueOnce({
-        ticket: mockTicket,
-        breakdown: mockBreakdown,
-      });
-
-      mockedActivityLogService.getAllByTicketId.mockResolvedValueOnce([
-        mockActivityLog,
-      ]);
+      mockedTicketService.checkOutVehicle.mockResolvedValueOnce(mockTicket);
     });
 
-    it('returns the ticket, breakdown and logs', async () => {
-      expect(await service.exit(mockVehicle)).toEqual({
-        ticket: mockTicket,
-        breakdown: mockBreakdown,
-        activityLogs: [mockActivityLog],
-      });
+    it('returns the ticket of the exiting vehicle', async () => {
+      expect(await service.exit(mockVehicle)).toEqual(mockTicket);
       expect(mockedTicketService.checkOutVehicle).toHaveBeenCalledWith(
         mockVehicle,
-      );
-      expect(mockedActivityLogService.getAllByTicketId).toHaveBeenCalledWith(
-        mockTicket.id,
       );
     });
   });

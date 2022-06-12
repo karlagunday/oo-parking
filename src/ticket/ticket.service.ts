@@ -1,23 +1,28 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { differenceInMinutes } from 'date-fns';
-import { ActivityLogService } from 'src/activity-log/activity-log.service';
-import { ActivityLogType } from 'src/activity-log/activity-log.types';
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseService } from 'src/base/base.service';
+import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { SpaceService } from 'src/space/space.service';
 import { CONTINUOUS_RATE_MINS } from 'src/utils/constants';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
-import { TicketCheckoutResult, TicketStatus } from './ticket.types';
+import { TicketStatus } from './ticket.types';
 
 @Injectable()
 export class TicketService extends BaseService<Ticket> {
   constructor(
     @Inject(Ticket.name)
     private ticketRepository: Repository<Ticket>,
-    private activityLogService: ActivityLogService,
+    @Inject(forwardRef(() => SpaceService))
     private spaceService: SpaceService,
+    @Inject(forwardRef(() => ParkingSessionService))
+    private parkingSessionService: ParkingSessionService,
   ) {
     super(ticketRepository);
   }
@@ -70,9 +75,6 @@ export class TicketService extends BaseService<Ticket> {
         await this.update(lastTicket.id, {
           status: TicketStatus.Active,
           completedAt: null,
-          // also clear the hours, costs
-          cost: 0,
-          hours: 0,
         });
         return await this.findOneById(lastTicket.id);
       }
@@ -90,57 +92,33 @@ export class TicketService extends BaseService<Ticket> {
   /**
    * Checks out a vehicle from its currently parked space
    * @param {Vehicle} vehicle vehicle to check out
-   * @returns {Promise<TicketCheckoutResult>} costs breakdown of the parked vehicle
+   * @returns {Promise<Ticket>} costs breakdown of the parked vehicle
    */
-  async checkOutVehicle(vehicle: Vehicle): Promise<TicketCheckoutResult> {
+  async checkOutVehicle(vehicle: Vehicle): Promise<Ticket> {
     const ticket = await this.getActiveTicketByVehicleId(vehicle.id);
 
-    const lastActivty =
-      await this.activityLogService.getLastActivityByVehicleId(vehicle.id);
-
-    if (lastActivty.type !== ActivityLogType.In) {
-      throw new BadRequestException('Vehicle not parked');
+    if (!ticket) {
+      throw new BadRequestException(
+        `No active ticket found for vehicle ${vehicle.id}`,
+      );
     }
 
-    const outActivity = await this.activityLogService.create(
-      ActivityLog.construct({
-        entranceId: lastActivty.entranceId,
-        spaceId: lastActivty.spaceId,
-        vehicleId: vehicle.id,
-        ticketId: ticket.id,
-        type: ActivityLogType.Out,
-      }),
-    );
+    const endedSession = await this.parkingSessionService.stop(ticket);
 
-    const parkedHours =
-      await this.activityLogService.calculateParkedHoursByTicketId(ticket.id);
+    // update the ticket to reflect the recently-stopped parking session
+    const updatedTotalCost = ticket.totalCost + endedSession.cost;
+    const updatedActualHours = ticket.actualHours + endedSession.totalHours;
+    const updatedPaidHours =
+      ticket.paidHours + Math.ceil(endedSession.paidHours);
+    const updatedRemainingHours = updatedPaidHours - updatedActualHours;
 
-    const costs = await this.spaceService.calculateCost(parkedHours);
-
-    const { totalCost, totalHours } = costs.reduce(
-      (acc, curr) => ({
-        totalCost: acc.totalCost + curr.cost,
-        totalHours: acc.totalHours + curr.hours,
-      }),
-      {
-        totalCost: 0,
-        totalHours: 0,
-      },
-    );
-
-    // also mark the ticket as completed
     await this.update(ticket.id, {
-      status: TicketStatus.Completed,
-      cost: totalCost,
-      hours: totalHours,
-      completedAt: outActivity.createdAt,
+      totalCost: updatedTotalCost,
+      actualHours: updatedActualHours,
+      paidHours: updatedPaidHours,
+      remainingHours: updatedRemainingHours,
     });
 
-    const updatedTicket = await this.findOneById(ticket.id);
-
-    return {
-      ticket: updatedTicket,
-      breakdown: costs,
-    };
+    return await this.findOneById(ticket.id);
   }
 }

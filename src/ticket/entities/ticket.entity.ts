@@ -1,5 +1,5 @@
-import { ActivityLog } from 'src/activity-log/entities/activity-log.entity';
 import { BaseEntity } from 'src/base/base.entity';
+import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import {
   Column,
@@ -31,20 +31,26 @@ export class Ticket extends BaseEntity {
   @JoinColumn()
   vehicle!: Vehicle;
 
-  @OneToMany(() => ActivityLog, (activityLog) => activityLog.ticket)
-  @JoinColumn()
-  activityLogs: ActivityLog[];
-
-  @Column({ type: 'float', default: 0 })
-  cost?: number;
-
-  @Column({ type: 'float', default: 0 })
-  hours?: number;
-
   @Column({
     type: 'timestamptz',
     nullable: true,
     default: null,
   })
   completedAt?: Date;
+
+  @OneToMany(() => ParkingSession, (parkingSession) => parkingSession.ticket)
+  @JoinColumn()
+  parkingSessions: ParkingSession[];
+
+  @Column({ type: 'float', default: 0 })
+  totalCost?: number;
+
+  @Column({ type: 'float', default: 0 })
+  actualHours?: number;
+
+  @Column({ type: 'float', default: 0 })
+  paidHours?: number;
+
+  @Column({ type: 'float', default: 0 })
+  remainingHours?: number;
 }
