@@ -8,10 +8,10 @@ import { BaseService } from 'src/base/base.service';
 import { ParkingSession } from 'src/parking-session/entities/parking-session.entity';
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
-import { VehicleSize } from 'src/vehicle/vehicle.types';
+import { VehicleSize, VehicleSizeDictionary } from 'src/vehicle/vehicle.types';
 import { FindManyOptions, Repository } from 'typeorm';
 import { Space } from './entities/space.entity';
-import { SpaceSize } from './space.types';
+import { SpaceSize, SpaceSizeDictionary } from './space.types';
 
 @Injectable()
 export class SpaceService extends BaseService<Space> {
@@ -67,7 +67,7 @@ export class SpaceService extends BaseService<Space> {
     vehicleSize: VehicleSize,
     spaceSize: SpaceSize,
   ): boolean {
-    return vehicleSize <= spaceSize;
+    return VehicleSizeDictionary[vehicleSize] <= SpaceSizeDictionary[spaceSize];
   }
 
   /**

@@ -10,6 +10,7 @@ import { BaseService } from 'src/base/base.service';
 import { EntranceSpaceService } from 'src/entrance-space/entrance-space.service';
 import { Space } from 'src/space/entities/space.entity';
 import { SpaceService } from 'src/space/space.service';
+import { SpaceSizeDictionary } from 'src/space/space.types';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
@@ -143,7 +144,7 @@ export class EntranceService extends BaseService<Entrance> {
         (a, b) =>
           b.entranceSpaces[0].distance - a.entranceSpaces[0].distance ||
           // in case they have the same distance, further sort it by size
-          b.size - a.size,
+          SpaceSizeDictionary[b.size] - SpaceSizeDictionary[a.size],
       )
       .pop();
   }
