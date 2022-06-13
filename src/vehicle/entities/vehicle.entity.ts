@@ -4,7 +4,7 @@ import {
   Column,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { VehicleSize } from '../vehicle.types';
@@ -20,7 +20,7 @@ export class Vehicle extends BaseEntity {
   @Column({ type: 'enum', enum: VehicleSize, default: VehicleSize.Small })
   size!: VehicleSize;
 
-  @ManyToOne(() => Ticket, (ticket) => ticket.vehicle)
+  @OneToMany(() => Ticket, (ticket) => ticket.vehicle)
   @JoinColumn()
   tickets!: Ticket[];
 }

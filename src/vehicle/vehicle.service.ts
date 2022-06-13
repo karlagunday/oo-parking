@@ -8,7 +8,7 @@ import { BaseService } from 'src/base/base.service';
 import { EntranceService } from 'src/entrance/entrance.service';
 import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Vehicle } from './entities/vehicle.entity';
 
 @Injectable()
@@ -20,6 +20,20 @@ export class VehicleService extends BaseService<Vehicle> {
     private ticketService: TicketService,
   ) {
     super(vehicleRepository);
+  }
+
+  /**
+   * Retrieves all the vehicles with their tickets
+   * @param {FindManyOptions<Vehicle>} options find many options
+   * @returns {Promise<Vehicle[]>} resulting vehicles
+   */
+  async findAll(options: FindManyOptions<Vehicle> = {}) {
+    const result = await super.findAll({
+      relations: ['tickets', 'tickets.parkingSessions'],
+      ...options,
+    });
+
+    return result;
   }
 
   /**
