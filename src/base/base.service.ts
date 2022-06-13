@@ -41,7 +41,9 @@ export abstract class BaseService<Entity extends BaseEntity> {
   async update(id: string, updateDto: QueryDeepPartialEntity<Entity>) {
     await this.findOneByIdOrFail(id);
 
-    return await this.repository.update(id, updateDto);
+    await this.repository.update(id, updateDto);
+
+    return await this.findOneById(id);
   }
 
   async remove(id: string) {
