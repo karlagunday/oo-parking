@@ -29,6 +29,10 @@ yarn start:dev
 yarn test
 ```
 
+### Testing the API
+
+An `insomnia-client.json` import file has been included to quickly tests the endpoints using the [Insomnia client](https://insomnia.rest/download).
+
 ### Resetting the database
 
 ```
