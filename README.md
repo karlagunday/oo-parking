@@ -32,5 +32,5 @@ yarn test
 ### Resetting the database
 
 ```
-yarn db:db:reset
+yarn db:dev:reset
 ```
