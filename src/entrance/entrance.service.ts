@@ -14,7 +14,7 @@ import { Ticket } from 'src/ticket/entities/ticket.entity';
 import { TicketService } from 'src/ticket/ticket.service';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { EntranceSpace } from '../entrance-space/entities/entrance-space.entity';
 import { AssignSpaceDto } from './dto/add-space.dto';
 import { Entrance } from './entities/entrance.entity';
@@ -30,6 +30,18 @@ export class EntranceService extends BaseService<Entrance> {
     private ticketService: TicketService,
   ) {
     super(entranceRepository);
+  }
+
+  /**
+   * Retrieves all the entrances with their spaces
+   * @param {FindManyOptions<Entrance>} options find many options
+   * @returns {Promise<Entrance[]>} resulting entrances
+   */
+  findAll(options: FindManyOptions<Entrance> = {}) {
+    return super.findAll({
+      relations: ['entranceSpaces', 'entranceSpaces.space'],
+      ...options,
+    });
   }
 
   /**

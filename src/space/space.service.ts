@@ -9,7 +9,7 @@ import { ParkingSession } from 'src/parking-session/entities/parking-session.ent
 import { ParkingSessionService } from 'src/parking-session/parking-session.service';
 import { ParkingSessionStatus } from 'src/parking-session/parking-session.types';
 import { VehicleSize } from 'src/vehicle/vehicle.types';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Space } from './entities/space.entity';
 import { SpaceSize } from './space.types';
 
@@ -22,6 +22,18 @@ export class SpaceService extends BaseService<Space> {
     private parkingSessionService: ParkingSessionService,
   ) {
     super(spaceRepository);
+  }
+
+  /**
+   * Retrieves all the spaces with their entrances
+   * @param {FindManyOptions<Entrance>} options find many options
+   * @returns {Promise<Space[]>} resulting spaces
+   */
+  findAll(options: FindManyOptions<Space> = {}) {
+    return super.findAll({
+      relations: ['entranceSpaces', 'entranceSpaces.entrance'],
+      ...options,
+    });
   }
 
   /**
