@@ -31,7 +31,12 @@ export class SpaceService extends BaseService<Space> {
    */
   findAll(options: FindManyOptions<Space> = {}) {
     return super.findAll({
-      relations: ['entranceSpaces', 'entranceSpaces.entrance'],
+      relations: [
+        'entranceSpaces',
+        'entranceSpaces.entrance',
+        'parkingSessions',
+        'parkingSessions.ticket',
+      ],
       ...options,
     });
   }

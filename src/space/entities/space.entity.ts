@@ -26,7 +26,6 @@ export class Space extends BaseEntity {
   @JoinColumn()
   entranceSpaces!: EntranceSpace[];
 
-  @Exclude()
   @OneToMany(() => ParkingSession, (parkingSession) => parkingSession.space)
   @JoinColumn()
   parkingSessions!: ParkingSession[];
