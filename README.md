@@ -2,30 +2,30 @@
 
 Parking API built with NestJS and Postgres
 
-# Requirements
+## Requirements
 
 1. Docker
 2. Postgres
 
-# Installation
+## Installation
 
 ```
 yarn install
 ```
 
-# Running the app
+## Running the app
 
 ```
 yarn start:dev
 ```
 
-# Running the tests
+## Running the tests
 
 ```
 yarn test
 ```
 
-# Resetting the database
+## Resetting the database
 
 ```
 yarn db:db:reset
